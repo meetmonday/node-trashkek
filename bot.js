@@ -27,7 +27,7 @@ async function out(text, msg, preview = true, del = false) {
       parse_mode: 'Markdown',
       disable_web_page_preview: !preview,
     });
-  } catch (err) { console.log(err.data); out(err.data, msg); }
+  } catch (err) { console.log(err); }
 }
 
 async function bot(d) {

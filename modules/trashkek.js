@@ -1,4 +1,7 @@
 const axios = require('axios').default;
+const TurndownService = require('turndown');
+
+const tS = new TurndownService();
 
 async function parseUrl(url) {
   const u = new URL(url);
@@ -8,11 +11,12 @@ async function parseUrl(url) {
 
   if (path[1] === 'link') {
     const r = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
-    topicId = r.data.match(/<trashTopicId>([0-9]*)/);
+    // eslint-disable-next-line prefer-destructuring
+    topicId = r.data.match(/<trashTopicId>([0-9]*)/)[1];
   }
 
   return {
-    topic_id: topicId[1],
+    topic_id: topicId,
     comment_id: commentId,
     full: url,
   };
@@ -48,7 +52,7 @@ function text2Emoji(text) {
 }
 
 function buildResult(d, ld) {
-  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${d.content}`;
+  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
 const trashkekMain = async (link, modplus, [msg, out]) => {
