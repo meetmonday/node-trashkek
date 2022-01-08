@@ -13,8 +13,9 @@ bot = (d) => {
   ctx = [d, out]
 
   if (d.text.includes('/hehentai')) h.hehentai(ctx)
-  if (d.text.includes('vm.tiktok.com')) tt.grabber(d.text, ctx)
+  if (d.text.includes('tiktok.com/')) tt.grabber(d.text, ctx)
   if (d.text.includes('/hentai')) h.hentai(d.text.replace('/hentai', ''), ctx)
+  if (d.text.includes('#div_comment')) tk.trashkekMain(d.text, 0, ctx)
 
 
   // output(d.text, d.chat.id)
@@ -24,14 +25,15 @@ dout = async (text, msg) => {
   console.log(text)
 }
 
-out = async (text, msg, preview = true) => {
-  console.log(text)
+out = async (text, msg, preview = true, del = false) => {
+  // console.log(text)
   const axios = require('axios').default;
+  if(del) delMsg(msg)
   try {
     const req = await axios.post(`${tgAPI}/sendMessage`, {
       text: text,
       chat_id: msg.chat.id,
-      parse_mode: "MarkdownV2",
+      parse_mode: "Markdown",
       disable_web_page_preview: !preview
     })
   } catch (err) { console.log(err) }
