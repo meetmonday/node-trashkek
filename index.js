@@ -1,15 +1,14 @@
-require('dotenv').config()
-
+require('dotenv').config();
+const http = require('http');
 const b = require('./bot');
 
-var http = require('http'); 
-http.createServer(function (req, res) {
-  req.on('data', chunk => {
-    b.bot(JSON.parse(chunk.toString()).message)
-  })
+http.createServer((req, res) => {
+  req.on('data', (chunk) => {
+    b.bot(JSON.parse(chunk.toString()).message);
+  });
   req.on('end', () => {
-    //end of data
-  })
+    //  end of data
+  });
   res.end();
 }).listen(9090);
 
