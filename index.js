@@ -1,5 +1,6 @@
-const b = require('./bot');
+require('dotenv').config()
 
+const b = require('./bot');
 
 var http = require('http'); 
 http.createServer(function (req, res) {

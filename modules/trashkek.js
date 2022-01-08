@@ -1,3 +1,9 @@
+trashkekMain = async (links, modplus) => {
+
+}
+
+
+
 linkParser = (urls) => {
   if(!urls) return [];
 
