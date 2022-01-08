@@ -6,12 +6,14 @@ const axios = require('axios').default;
 // bot modules
 const tk = require('./modules/trashkek')
 const h = require('./modules/hentai')
+const tt = require('./modules/tiktok')
 
 bot = (d) => {
   if (!d || !('text' in d)) return;
   ctx = [d, out]
 
   if (d.text.includes('/hehentai')) h.hehentai(ctx)
+  if (d.text.includes('vm.tiktok.com')) tt.grabber(d.text, ctx)
   if (d.text.includes('/hentai')) h.hentai(d.text.replace('/hentai', ''), ctx)
 
 

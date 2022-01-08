@@ -1,7 +1,14 @@
 {
+  "name": "node-trashkek",
+  "version": "0.12398798",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
   "dependencies": {
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "tiktok-scraper-without-watermark": "^1.1.3"
   }
 }

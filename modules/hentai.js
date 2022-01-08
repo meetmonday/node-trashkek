@@ -14,7 +14,7 @@ hentai = async (tags, [msg, out]) => {
       port: process.env.HENTAI_PORT
     }
   });
-  if(req.data.post)
+  if (req.data.post)
     r = `[Пикча](${req.data.post[0].file_url})\nscore: ${req.data.post[0].score} / id: ${req.data.post[0].id}`
   else r = `${tags} не нашлось`
   out(r, msg)
