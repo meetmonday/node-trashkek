@@ -52,7 +52,7 @@ function text2Emoji(text) {
 }
 
 function buildResult(d, ld) {
-  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
+  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
 const trashkekMain = async (link, modplus, [msg, out]) => {

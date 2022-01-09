@@ -17,12 +17,15 @@ async function delMsg(msg) {
   } catch (err) { console.log(err); }
 }
 
+function tgTextParser(text) {
+  return text.replace(/((\\_|\*|\\~|\\`|\|){2})/g, '\\$1');
+}
+
 async function out(text, msg, preview = true, del = false) {
-  // console.log(text)
   if (del) delMsg(msg);
   try {
     await axios.post(`${tgAPI}/sendMessage`, {
-      text,
+      text: tgTextParser(text),
       chat_id: msg.chat.id,
       parse_mode: 'Markdown',
       disable_web_page_preview: !preview,
