@@ -7,6 +7,7 @@ const axios = require('axios').default;
 const tk = require('./modules/trashkek');
 const h = require('./modules/hentai');
 const tt = require('./modules/tiktok');
+const prek = require('./modules/prekols');
 
 async function delMsg(msg) {
   try {
@@ -40,6 +41,7 @@ async function bot(d) {
   if (d.text.includes('/hehentai')) h.hehentai(ctx);
   if (d.text.includes('tiktok.com/')) tt.grabber(d.text, ctx);
   if (d.text.includes('/hentai')) h.hentai(d.text.replace('/hentai', ''), ctx);
+  if (d.text.includes('/fig')) prek.b3dText(d.text.replace('/fig ', ''), ctx);
   if (d.text.includes('#div_comment')) tk.trashkekMain(d.text, 0, ctx);
 }
 
