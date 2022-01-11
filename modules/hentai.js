@@ -13,9 +13,9 @@ async function hentai(tags, [msg, out]) {
     },
   });
   if (req.data.post) {
-    const r = `[Пикча](${req.data.post[0].file_url})\nscore: ${req.data.post[0].score} / id: ${req.data.post[0].id}`;
+    const r = `[Пикча](${req.data.post[0].file_url})\nscore: ${req.data.post[0].score} / id: [${req.data.post[0].id}](https://gelbooru.com/index.php?page=post&s=view&id=${req.data.post[0].id})`;
     out(r, msg);
-  } else { const r = `${tags} не нашлось`; out(r, msg); }
+  } else { const r = `\`\`\`${tags}\`\`\` не нашлось`; out(r, msg); }
 }
 
 module.exports = { hentai, hehentai };

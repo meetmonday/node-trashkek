@@ -3,7 +3,8 @@
   "version": "0.12398798",
   "main": "index.js",
   "scripts": {
-    "start": "node index"
+    "start": "node index",
+    "test": "jest"
   },
   "dependencies": {
     "axios": "^0.24.0",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "eslint": "^8.6.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.25.4"
+    "eslint-plugin-import": "^2.25.4",
+    "jest": "^27.4.7"
   }
 }

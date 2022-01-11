@@ -19,7 +19,8 @@ async function delMsg(msg) {
 }
 
 function tgTextParser(text) {
-  return text.replace(/((\\_|\*|\\~|\\`|\|){2})/g, '\\$1');
+  // return text.replace(/((\\_|\*|\\~|\\`|\|){2})/g, '\\$1');
+  return text;
 }
 
 async function out(text, msg, preview = true, del = false) {
