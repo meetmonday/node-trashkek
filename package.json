@@ -1,6 +1,6 @@
 {
   "name": "node-trashkek",
-  "version": "0.12398798",
+  "version": "1.1",
   "main": "index.js",
   "scripts": {
     "start": "node index",

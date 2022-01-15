@@ -1,8 +1,8 @@
 const _ = require('lodash/random');
 const axios = require('axios').default;
 
-function hehentai([msg, out]) {
-  out(`[Пикча](https://danbooru.donmai.us/posts/${_(5013920)})`, msg);
+function hehentai([msg, out], add = '') {
+  out(`[Пикча](https://danbooru.donmai.us/posts/${_(5013920)})\n${add}`, msg);
 }
 
 async function hentai(tags, [msg, out]) {
