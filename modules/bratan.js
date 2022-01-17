@@ -1,5 +1,5 @@
 const _ = require('lodash/random');
-const dbm = require('../lib/dbm');
+const dbm = require('../lib/dbManager');
 const h = require('./hentai');
 
 const dbName = 'bratan';

@@ -55,7 +55,7 @@ function buildResult(d, ld) {
   return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
-const trashkekMain = async (link, modplus, [msg, out]) => {
+const main = async (link, modplus, [msg, out]) => {
   const linkData = await parseUrl(link);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
@@ -63,4 +63,4 @@ const trashkekMain = async (link, modplus, [msg, out]) => {
   out(result, msg, false, true);
 };
 
-module.exports = { trashkekMain };
+module.exports = { main };

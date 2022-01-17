@@ -3,7 +3,7 @@
   "version": "1.2",
   "main": "index.js",
   "scripts": {
-    "start": "node index",
+    "bot": "node index",
     "test": "jest"
   },
   "dependencies": {

@@ -4,10 +4,10 @@ const tgAPI = `https://api.telegram.org/bot${token}`;
 const axios = require('axios').default;
 
 // bot modules
-const tk = require('./modules/trashkek');
-const h = require('./modules/hentai');
-const tt = require('./modules/tiktok');
-const bruh = require('./modules/bratan');
+const trashkek = require('./modules/trashkek');
+const hentai = require('./modules/hentai');
+const tiktok = require('./modules/tiktok');
+const bratan = require('./modules/bratan');
 
 async function delMsg(msg) {
   try {
@@ -45,11 +45,11 @@ async function bot(d) {
 
   if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
 
-  if (cmd === '/hehentai' || cmd === d.text) h.hehentai(ctx);
-  else if (cmd === '/hentai') h.hentai(dtr(d, '/hentai'), ctx);
-  else if (dti(d, 'tiktok.com/')) tt.grabber(d.text, ctx);
-  else if (dti(d, '#div_comment')) tk.trashkekMain(d.text, 0, ctx);
-  else if (dti(d, '/bruh')) bruh.main(cmd, ctx);
+  if (cmd === '/hehentai' || cmd === d.text) hentai.random(ctx);
+  else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
+  else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
+  else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
+  else if (dti(d, '/bruh')) bratan.main(cmd, ctx);
 }
 
 module.exports = {

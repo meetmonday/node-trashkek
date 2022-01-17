@@ -1,6 +1,6 @@
 const tiktok = require('tiktok-scraper-without-watermark');
 
-function grabber(link, [msg, out]) {
+function main(link, [msg, out]) {
   tiktok.tiktokdownload(link)
     .then((result) => {
       if (result) out(`[Текток](${result.nowm})`, msg);
@@ -9,4 +9,4 @@ function grabber(link, [msg, out]) {
     .catch((e) => out(`Чета не так пошло\n||${e}||`, msg));
 }
 
-module.exports = { grabber };
+module.exports = { main };
