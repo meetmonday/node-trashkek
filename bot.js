@@ -39,14 +39,17 @@ function dtr(d, cmd) {
 }
 
 async function bot(d) {
-  if (!d || !('text' in d)) return;
+  if (!d || !('entities' in d)) return;
+  let cmd = null;
   const ctx = [d, out];
 
-  if (dti(d, '/hehentai')) h.hehentai(ctx);
-  else if (dti(d, '/hentai')) h.hentai(dtr(d, '/hentai'), ctx);
+  if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
+
+  if (cmd === '/hehentai' || cmd === d.text) h.hehentai(ctx);
+  else if (cmd === '/hentai') h.hentai(dtr(d, '/hentai'), ctx);
   else if (dti(d, 'tiktok.com/')) tt.grabber(d.text, ctx);
   else if (dti(d, '#div_comment')) tk.trashkekMain(d.text, 0, ctx);
-  else if (dti(d, '/bruh')) bruh.init(d.text, ctx);
+  else if (dti(d, '/bruh')) bruh.main(cmd, ctx);
 }
 
 module.exports = {

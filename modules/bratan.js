@@ -2,43 +2,43 @@ const _ = require('lodash/random');
 const dbm = require('../lib/dbm');
 const h = require('./hentai');
 
-const db = 'bratan';
-const br = dbm.ldb(db);
+const dbName = 'bratan';
+const db = dbm.ldb(dbName);
 
-function init(text, [msg, out]) {
-  if (text.includes('/bruhjoin')) {
-    if (msg.from.username in br.players) {
-      out('Вы уже в игре', msg);
-    } else {
-      br.players[msg.from.username] = 0;
-      br.playerCount += 1;
-      out('Теперь вы можете стать братаном', msg);
-      dbm.sdb(db, br);
+function main(cmd, [msg, out]) {
+  if (cmd === '/bruhjoin') {
+    if (msg.from.username in db.players) {
+      out('Вы уже в игре', msg); return;
     }
+
+    db.players[msg.from.username] = 0;
+    db.playerCount += 1;
+    out('Теперь вы можете стать братаном', msg);
+    dbm.sdb(dbName, db);
   }
 
-  if (text.includes('/bruhspin')) {
+  if (cmd === '/bruhspin') {
     const d = new Date();
-    if (br.lastPlayed !== d.getDay()) {
-      const bruhoftheday = Object.keys(br.players)[_(br.playerCount - 1)];
-      out(`Братан дня: @${bruhoftheday}`, msg);
-      br.players[bruhoftheday] += 1;
-      br.lastPlayed = d.getDay();
-      br.lastBruh = bruhoftheday;
-      dbm.sdb(db, br);
-    } else {
-      out(`Братан дня уже был определен: ${br.lastBruh}`, msg);
+    if (db.lastPlayed === d.getDay()) {
+      out(`Братан дня уже был определен: ${db.lastBruh}`, msg); return;
     }
+
+    const bruhoftheday = Object.keys(db.players)[_(db.playerCount - 1)];
+    out(`Братан дня: @${bruhoftheday}`, msg);
+    db.players[bruhoftheday] += 1;
+    db.lastPlayed = d.getDay();
+    db.lastBruh = bruhoftheday;
+    dbm.sdb(dbName, db);
   }
 
-  if (text.includes('/bruhtop')) {
+  if (cmd === '/bruhtop') {
     // let res = 'Топ братанов:\n';
-    h.hehentai([msg, out], `\`\`\`${JSON.stringify(br.players)}\`\`\``);
+    h.hehentai([msg, out], `\`\`\`${JSON.stringify(db.players)}\`\`\``);
   }
 
-  if (text.includes('/bruhme')) {
-    out(`Вы были братаном ${br.players[msg.from.username]} раз`, msg);
+  if (cmd === '/bruhme') {
+    out(`Вы были братаном ${db.players[msg.from.username]} раз`, msg);
   }
 }
 
-module.exports = { init };
+module.exports = { main };
