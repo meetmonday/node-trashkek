@@ -1,16 +1,17 @@
 require('dotenv').config();
 const http = require('http');
-const figlet = require('figlet');
+
 const b = require('./bot');
 
-console.log(figlet.textSync(`TRASHKEK\nRABOTAET...\nPort: ${process.env.SERVER_PORT}`));
+(async () => {
+  const terminalImage = (await import('terminal-image')).default;
+  console.log(await terminalImage.file('misc/red.jpg'));
+  console.log('TRASHKEK RABOTAET...');
+})();
 
 http.createServer((req, res) => {
   req.on('data', (chunk) => {
     b.bot(JSON.parse(chunk.toString()).message);
-  });
-  req.on('end', () => {
-    //  end of data
   });
   res.end();
 }).listen(process.env.SERVER_PORT);
