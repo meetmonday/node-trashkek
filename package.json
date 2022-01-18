@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "bot": "node index",
+    "dev": "node index -wh",
     "test": "jest"
   },
   "dependencies": {

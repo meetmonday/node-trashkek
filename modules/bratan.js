@@ -1,6 +1,5 @@
 const _ = require('lodash/random');
 const dbm = require('../lib/dbManager');
-const h = require('./hentai');
 
 const dbName = 'bratan';
 const db = dbm.ldb(dbName);
@@ -32,8 +31,9 @@ function main(cmd, [msg, out]) {
   }
 
   if (cmd === '/bruhtop') {
-    // let res = 'Топ братанов:\n';
-    h.hehentai([msg, out], `\`\`\`${JSON.stringify(db.players)}\`\`\``);
+    const res = 'Топ братанов:\n';
+    out(res, msg);
+    // out(`\`\`\`${JSON.stringify(db.players)}\`\`\``);
   }
 
   if (cmd === '/bruhme') {
