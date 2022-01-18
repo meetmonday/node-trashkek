@@ -3,6 +3,7 @@ const http = require('http');
 const axios = require('axios').default;
 
 const b = require('./bot');
+// хуй
 
 if (process.argv[2] === '-wh') {
   axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`).then((e) => {
