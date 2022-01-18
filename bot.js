@@ -18,7 +18,7 @@ async function delMsg(msg) {
   } catch (err) { console.log(err); }
 }
 
-async function out(text, msg, preview = true, del = false) {
+async function outMsg(text, msg, preview = true, del = false) {
   if (del) delMsg(msg);
   try {
     await axios.post(`${tgAPI}/sendMessage`, {
@@ -41,11 +41,11 @@ function dtr(d, cmd) {
 async function bot(d) {
   if (!d || !('entities' in d)) return;
   let cmd = null;
-  const ctx = [d, out];
+  const ctx = [d, outMsg];
 
   if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
 
-  if (cmd === '/hehentai' || cmd === d.text) hentai.random(ctx);
+  if (cmd === '/hehentai' || d.text === '/hentai') hentai.random(ctx);
   else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
   else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
   else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
@@ -53,5 +53,5 @@ async function bot(d) {
 }
 
 module.exports = {
-  bot, out, delMsg,
+  bot, outMsg, delMsg,
 };
