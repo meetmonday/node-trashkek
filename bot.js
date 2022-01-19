@@ -8,6 +8,7 @@ const trashkek = require('./modules/trashkek');
 const hentai = require('./modules/hentai');
 const tiktok = require('./modules/tiktok');
 const bratan = require('./modules/bratan');
+const meta = require('./modules/meta');
 
 async function delMsg(msg) {
   try {
@@ -50,6 +51,7 @@ async function bot(d) {
   else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
   else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
   else if (dti(d, '/bruh')) bratan.main(cmd, ctx);
+  else if (dti(d, '/meta')) meta.main(cmd, ctx);
 }
 
 module.exports = {
