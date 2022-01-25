@@ -10,25 +10,21 @@ const tiktok = require('./modules/tiktok');
 const bratan = require('./modules/bratan');
 const meta = require('./modules/meta');
 
-async function delMsg(msg) {
-  try {
-    await axios.post(`${tgAPI}/deleteMessage`, {
-      chat_id: msg.chat.id,
-      message_id: msg.message_id,
-    });
-  } catch (err) { console.log(err); }
+function delMsg(msg) {
+  axios.post(`${tgAPI}/deleteMessage`, {
+    chat_id: msg.chat.id,
+    message_id: msg.message_id,
+  }).catch((e) => { console.log(e); });
 }
 
-async function outMsg(text, msg, preview = true, del = false) {
+function outMsg(text, msg, preview = true, del = false) {
   if (del) delMsg(msg);
-  try {
-    await axios.post(`${tgAPI}/sendMessage`, {
-      text,
-      chat_id: msg.chat.id,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: !preview,
-    });
-  } catch (err) { console.log(err); }
+  axios.post(`${tgAPI}/sendMessage`, {
+    text,
+    chat_id: msg.chat.id,
+    parse_mode: 'Markdown',
+    disable_web_page_preview: !preview,
+  }).catch((err) => { console.log(err); });
 }
 
 function dti(d, cmd) {
@@ -39,7 +35,7 @@ function dtr(d, cmd) {
   return d.text.replace(cmd, '');
 }
 
-async function bot(d) {
+function bot(d) {
   if (!d || !('entities' in d)) return;
   let cmd = null;
   const ctx = [d, outMsg];
