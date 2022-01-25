@@ -8,7 +8,7 @@ const trashkek = require('./modules/trashkek');
 const hentai = require('./modules/hentai');
 const tiktok = require('./modules/tiktok');
 const bratan = require('./modules/bratan');
-const meta = require('./modules/meta');
+const meta = require('./modules_meta/meta');
 
 async function delMsg(msg) {
   try {
@@ -45,7 +45,7 @@ async function bot(d) {
   const ctx = [d, outMsg];
 
   if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
-
+  cmd = dtr(d, '@trashkek_bot');
   if (cmd === '/hehentai' || d.text === '/hentai') hentai.random(ctx);
   else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
   else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);

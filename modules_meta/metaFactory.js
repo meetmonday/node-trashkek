@@ -1,9 +1,6 @@
 const lrand = require('lodash/random');
 
-function User(Conf, Money, [moneyCount, itemsCount]) {
-  const randomMoney = moneyCount;
-  const randomItem = itemsCount;
-
+function User(Conf, Money, [randomMoney, randomItem]) {
   return {
     id: Conf.usersCount + 1,
     score: 0.5,
@@ -17,7 +14,6 @@ function User(Conf, Money, [moneyCount, itemsCount]) {
       {
         id: randomItem,
         quality: lrand(1, true),
-        owned: 1,
       },
     ],
   };
