@@ -13,7 +13,6 @@ if (process.argv[2] === '-wh') {
 console.log('TRASHKEK RABOTAET...');
 
 http.createServer((req, res) => {
-  console.log(req);
   req.on('data', (chunk) => {
     b.bot(JSON.parse(chunk.toString()).message);
   });
