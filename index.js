@@ -17,4 +17,4 @@ http.createServer((req, res) => {
     b.bot(JSON.parse(chunk.toString()).message);
   });
   res.end();
-}).listen(process.env.SERVER_PORT);
+}).listen(process.env.PORT);
