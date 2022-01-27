@@ -14,7 +14,11 @@ console.log('TRASHKEK RABOTAET...');
 
 http.createServer((req, res) => {
   req.on('data', (chunk) => {
-    b.bot(JSON.parse(chunk.toString()).message);
+    try {
+      b.bot(JSON.parse(chunk.toString()).message);
+    } catch (e) {
+      console.log(e);
+    }
   });
   res.end();
 }).listen(process.env.PORT);
