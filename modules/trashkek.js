@@ -32,12 +32,19 @@ function grabCommentById(c, id) {
 }
 
 function timeAgo(ts) {
-  const times = [['дн.', 86400], ['ч.', 3600], ['мин.', 60], ['сек.', 1]];
+  let fin = '';
+  const times = [
+    ['сек.', 1],
+    ['мин.', 60],
+    ['ч.', 3600],
+    ['дн.', 86400],
+  ];
   const diff = Math.floor(Date.now() / 1000 - ts);
-  // eslint-disable-next-line consistent-return
   times.forEach((el) => {
-    if (diff / el[1] > 1) return `${Math.floor(diff / el[1])} ${el[0]}`;
+    if (diff / el[1] > 1) fin = `${Math.floor(diff / el[1])} ${el[0]}`;
   });
+
+  return fin;
 }
 
 function text2Emoji(text) {
