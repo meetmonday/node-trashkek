@@ -1,5 +1,6 @@
 const { get } = require('axios').default;
 const TurndownService = require('turndown');
+const { bold } = require('../lib/tgFormat');
 
 const tS = new TurndownService();
 
@@ -32,7 +33,7 @@ function grabCommentById(c, id) {
 }
 
 function timeAgo(ts) {
-  let fin = '';
+  let fin = null;
   const times = [
     ['сек.', 1],
     ['мин.', 60],
@@ -47,7 +48,7 @@ function timeAgo(ts) {
   return fin;
 }
 
-function text2Emoji(text) {
+function t2e(text) {
   const emojis = ['🌚', '💬', '🏳️‍🌈', '🙂', '🤡', '💩', '🐔', '😂', '♿️', '👹'];
   const bytes = text.split('').map((e) => e.charCodeAt(0));
   const sum = bytes.reduce((x, y) => x + y);
@@ -55,11 +56,11 @@ function text2Emoji(text) {
 }
 
 function buildResult(d, ld) {
-  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
+  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
-const main = async (link, modplus, [msg, out]) => {
-  const linkData = await parseUrl(link);
+const main = async (url, modplus, [msg, out]) => {
+  const linkData = await parseUrl(url);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
