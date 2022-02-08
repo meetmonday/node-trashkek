@@ -1,5 +1,6 @@
-const axios = require('axios').default;
+const { get } = require('axios').default;
 const TurndownService = require('turndown');
+const { bold } = require('../lib/tgFormat');
 
 const tS = new TurndownService();
 
@@ -10,9 +11,9 @@ async function parseUrl(url) {
   const commentId = u.hash.split('_')[2];
 
   if (path[1] === 'link') {
-    const r = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
+    const { data } = await get(`https://trashbox.ru/api_topics/${topicId}`);
     // eslint-disable-next-line prefer-destructuring
-    topicId = r.data.match(/<trashTopicId>([0-9]*)/)[1];
+    topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   }
 
   return {
@@ -23,7 +24,7 @@ async function parseUrl(url) {
 }
 
 async function grabComments(topicId) {
-  const e = await axios.get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
+  const e = await get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
   return e.data.comments;
 }
 
@@ -32,6 +33,7 @@ function grabCommentById(c, id) {
 }
 
 function timeAgo(ts) {
+  let fin = null;
   const times = [
     ['сек.', 1],
     ['мин.', 60],
@@ -39,24 +41,26 @@ function timeAgo(ts) {
     ['дн.', 86400],
   ];
   const diff = Math.floor(Date.now() / 1000 - ts);
-  let fin = '';
   times.forEach((el) => {
     if (diff / el[1] > 1) fin = `${Math.floor(diff / el[1])} ${el[0]}`;
   });
+
   return fin;
 }
 
-function text2Emoji(text) {
+function t2e(text) {
   const emojis = ['🌚', '💬', '🏳️‍🌈', '🙂', '🤡', '💩', '🐔', '😂', '♿️', '👹'];
-  return emojis[text.length % 10];
+  const bytes = text.split('').map((e) => e.charCodeAt(0));
+  const sum = bytes.reduce((x, y) => x + y);
+  return emojis[sum % 10];
 }
 
 function buildResult(d, ld) {
-  return `${text2Emoji(d.login)} *${d.login}*, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
+  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
-const main = async (link, modplus, [msg, out]) => {
-  const linkData = await parseUrl(link);
+const main = async (url, modplus, [msg, out]) => {
+  const linkData = await parseUrl(url);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
