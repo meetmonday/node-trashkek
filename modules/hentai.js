@@ -1,6 +1,6 @@
 const { get } = require('axios').default;
 const { rand } = require('../lib/rand');
-const { code, link } = require('../lib/tgFormat');
+const { link } = require('../lib/tgFormat');
 
 const config = process.env.HENTAI_PROXY ? {
   proxy: {
@@ -14,12 +14,11 @@ function random([msg, out]) {
 }
 
 async function search(tags, [msg, out]) {
-  get(`https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags}`, config).then((req) => {
-    let r = `${code(tags)} не нашлось`;
-    if (req.data.post) r = `${link('Пикча', req.data.post[0].file_url)}\nscore: ${req.data.post[0].score} / id: ${link(req.data.post[0].id, `https://gelbooru.com/index.php?page=post&s=view&id=${req.data.post[0].id}`)}`;
-    out(r, msg);
+  get(`https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags}`, config).then(({ data }) => {
+    if (data.post) out(`${link('Пикча', data.post[0].file_url)}\nscore: ${data.post[0].score} / id: ${link(data.post[0].id, `https://gelbooru.com/index.php?page=post&s=view&id=${data.post[0].id}`)}`, msg);
+    else out('Ничего не нашлось', msg);
   }).catch((e) => {
-    out(`Ошибка: ${code(e.code)}`, msg);
+    out(`Ошибка: ${e.code}`, msg);
   });
 }
 
