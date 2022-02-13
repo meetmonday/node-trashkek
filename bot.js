@@ -7,6 +7,7 @@ const { post } = require('axios').default;
 const trashkek = require('./modules/trashkek');
 const hentai = require('./modules/hentai');
 const tiktok = require('./modules/tiktok');
+const dora = require('./modules/dora');
 
 function delMsg(msg) {
   post(`${tgAPI}/deleteMessage`, {
@@ -35,9 +36,10 @@ function bot(d) {
   const ctx = [d, outMsg];
   if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
 
-  if (cmd === '/ping') outMsg('Понг, блять.', d);
+  if (cmd === '/ping') dora.main(ctx);
   else if (cmd === '/hehentai' || d.text === '/hentai') hentai.random(ctx);
   else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
+  else if (cmd === '/dora') dora.main(ctx);
   else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
   else if (dti(d, '/pidor')) outMsg(`Пидор дня: @${d.from.username}\nСоси хуй`, d, false, true);
   else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
