@@ -39,7 +39,7 @@ function bot(d) {
   if (cmd === '/ping') dora.main(ctx);
   else if (cmd === '/hehentai' || d.text === '/hentai') hentai.random(ctx);
   else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
-  else if (cmd === '/dora') dora.main(ctx);
+  else if (cmd === '/dora') dora.clip(ctx);
   else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
   else if (dti(d, '/pidor')) outMsg(`Пидор дня: @${d.from.username}\nСоси хуй`, d, false, true);
   else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
