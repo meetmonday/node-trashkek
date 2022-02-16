@@ -45,6 +45,4 @@ function bot(d) {
   else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
 }
 
-module.exports = {
-  bot, outMsg, delMsg,
-};
+module.exports = { bot };
