@@ -1,48 +1,24 @@
-const token = process.env.BOT_TOKEN;
-const tgAPI = `https://api.telegram.org/bot${token}`;
-
-const { post } = require('axios').default;
-
 // bot modules
 const trashkek = require('./modules/trashkek');
 const hentai = require('./modules/hentai');
 const tiktok = require('./modules/tiktok');
 const dora = require('./modules/dora');
 
-function delMsg(msg) {
-  post(`${tgAPI}/deleteMessage`, {
-    chat_id: msg.chat.id,
-    message_id: msg.message_id,
-  }).catch((e) => { console.log(e); });
-}
-
-function outMsg(text, msg, preview = true, del = false) {
-  if (del) delMsg(msg);
-  post(`${tgAPI}/sendMessage`, {
-    text,
-    chat_id: msg.chat.id,
-    parse_mode: 'Markdown',
-    disable_web_page_preview: !preview,
-  }).catch((err) => { console.log(err); });
-}
-
 const dti = ({ text }, cmd) => text.includes(cmd);
 const dtr = ({ text }, cmd) => text.replace(cmd, '');
 
-function bot(d) {
-  if (!d || !('entities' in d) || !dti(d, '/')) return;
+function bot(message) {
+  if (!message || !('entities' in message) || !dti(message, '/')) return;
   let cmd = null;
 
-  const ctx = [d, outMsg];
-  if (d.entities[0].type === 'bot_command') cmd = d.text.slice(d.entities[0].offset, d.entities[0].length);
+  if (message.entities[0].type === 'bot_command') cmd = message.text.slice(message.entities[0].offset, message.entities[0].length);
 
-  if (cmd === '/ping') dora.main(ctx);
-  else if (cmd === '/hehentai' || d.text === '/hentai') hentai.random(ctx);
-  else if (cmd === '/hentai') hentai.search(dtr(d, '/hentai'), ctx);
-  else if (cmd === '/dora') dora.clip(ctx);
-  else if (dti(d, '#div_comment')) trashkek.main(d.text, 0, ctx);
-  else if (dti(d, '/pidor')) outMsg(`Пидор дня: @${d.from.username}\nСоси хуй`, d, false, true);
-  else if (dti(d, 'tiktok.com/')) tiktok.main(d.text, ctx);
+  if (cmd === '/ping') dora.main(message);
+  else if (message.text === '/hentai') hentai.random(message);
+  else if (cmd === '/hentai') hentai.search(dtr(message, '/hentai'), message);
+  else if (cmd === '/dora') dora.clip(message);
+  else if (dti(message, '#div_comment')) trashkek.main(message.text, 0, message);
+  else if (dti(message, 'tiktok.com/')) tiktok.main(message.text, message);
 }
 
 module.exports = { bot };

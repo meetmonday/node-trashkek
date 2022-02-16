@@ -1,4 +1,5 @@
 const { get } = require('axios').default;
+const { sendMessage, deleteMessage } = require('kektg');
 const TurndownService = require('turndown');
 const { bold } = require('../lib/tgFormat');
 
@@ -59,12 +60,13 @@ function buildResult(d, ld) {
   return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
-const main = async (url, modplus, [msg, out]) => {
+const main = async (url, modplus, msg) => {
   const linkData = await parseUrl(url);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
-  out(result, msg, false, true);
+  sendMessage(result, msg, { disablePreview: true });
+  deleteMessage(msg);
 };
 
 module.exports = { main };
