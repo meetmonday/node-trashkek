@@ -19,6 +19,7 @@ function bot(message) {
   else if (cmd === '/dora') dora.clip(message);
   else if (dti(message, '#div_comment')) trashkek.main(message.text, 0, message);
   else if (dti(message, 'tiktok.com/')) tiktok.main(message.text, message);
+  else if (dti(message, '/ngforce')) dora.clip(message);
 }
 
 module.exports = { bot };
