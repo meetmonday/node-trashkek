@@ -7,7 +7,7 @@ get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${proce
   console.log(e.data);
 });
 
-console.log(`TRASHKEK RABOTAET... /// PORT: ${process.env.PORT || 8080}`);
+console.log('TRASHKEK RABOTAET... /// PORT:', process.env.PORT || 8080, process.env.WH_URL);
 
 createServer((req, res) => {
   req.on('data', (chunk) => {

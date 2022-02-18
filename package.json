@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index",
-    "dev": "node -r dotenv/config index"
+    "dev": "node -r dotenv/config index",
+    "devng": "WH_URL=$(curl http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url) && node -r dotenv/config index && WH_URL="
   },
   "dependencies": {
     "axios": "^0.24.0",

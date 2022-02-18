@@ -60,8 +60,8 @@ function buildResult(d, ld) {
   return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
 }
 
-const main = async (url, modplus, msg) => {
-  const linkData = await parseUrl(url);
+const main = async (msg) => {
+  const linkData = await parseUrl(msg.text);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
