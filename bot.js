@@ -13,7 +13,7 @@ function bot(message) {
 
   if (message.entities[0].type === 'bot_command') cmd = message.text.slice(message.entities[0].offset, message.entities[0].length);
 
-  if (cmd === '/ping') dora.main(message);
+  if (cmd === '/ping') dora.lyric(message);
   else if (message.text === '/hentai') hentai.random(message);
   else if (cmd === '/hentai') hentai.search(dtr(message, '/hentai'), message);
   else if (cmd === '/dora') dora.clip(message);
