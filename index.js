@@ -1,9 +1,8 @@
-const { createServer } = require('http');
-const { get } = require('axios').default;
+import axios from 'axios';
+import { createServer } from 'http';
+import bot from './bot.js';
 
-const { bot } = require('./bot');
-
-get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`).then((e) => {
+axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`).then((e) => {
   console.log(e.data);
 });
 
