@@ -1,6 +1,6 @@
-const { tiktokdownload } = require('tiktok-scraper-without-watermark');
-const { sendMessage } = require('kektg');
-const { link } = require('../lib/tgFormat');
+import { tiktokdownload } from 'tiktok-scraper-without-watermark';
+import { sendMessage } from 'kektg';
+import { link } from '../lib/tgFormat.js';
 
 function main(msg) {
   tiktokdownload(msg.text)
@@ -11,4 +11,4 @@ function main(msg) {
     .catch((e) => sendMessage(`Чета не так пошло\n||${e}||`, msg));
 }
 
-module.exports = { main };
+export default main;

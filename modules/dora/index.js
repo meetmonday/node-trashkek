@@ -1,6 +1,6 @@
-const { readFileSync } = require('fs');
-const { sendMessage } = require('kektg');
-const { rand } = require('../../lib/rand');
+import { readFileSync } from 'fs';
+import { sendMessage } from 'kektg';
+import rand from '../../lib/rand.js';
 
 const lyrics = readFileSync('modules/dora/dorafool.txt', { encoding: 'utf8', flag: 'r' }).split('\n');
 const clips = readFileSync('modules/dora/doraclips.txt', { encoding: 'utf8', flag: 'r' }).split('\n');
@@ -13,4 +13,4 @@ function clip(msg) {
   sendMessage(clips[rand(0, clips.length)], msg);
 }
 
-module.exports = { lyric, clip };
+export default { lyric, clip };

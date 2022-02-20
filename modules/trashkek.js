@@ -1,9 +1,8 @@
-const { get } = require('axios').default;
-const { sendMessage, deleteMessage } = require('kektg');
-const TurndownService = require('turndown');
-const { bold } = require('../lib/tgFormat');
+// const { get } = require('axios').default;
+import axios from 'axios';
+import { sendMessage, deleteMessage } from 'kektg';
 
-const tS = new TurndownService();
+import { bold } from '../lib/tgFormat.js';
 
 async function parseUrl(url) {
   const u = new URL(url);
@@ -12,7 +11,7 @@ async function parseUrl(url) {
   const commentId = u.hash.split('_')[2];
 
   if (path[1] === 'link') {
-    const { data } = await get(`https://trashbox.ru/api_topics/${topicId}`);
+    const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
     // eslint-disable-next-line prefer-destructuring
     topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   }
@@ -25,7 +24,7 @@ async function parseUrl(url) {
 }
 
 async function grabComments(topicId) {
-  const e = await get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
+  const e = await axios.get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
   return e.data.comments;
 }
 
@@ -57,7 +56,7 @@ function t2e(text) {
 }
 
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${tS.turndown(d.content)}`;
+  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${d.content}`;
 }
 
 const main = async (msg) => {
@@ -69,4 +68,4 @@ const main = async (msg) => {
   deleteMessage(msg);
 };
 
-module.exports = { main };
+export default main;
