@@ -1,14 +1,16 @@
 // const { get } = require('axios').default;
 import axios from 'axios';
+import { link } from 'fs';
 import { sendMessage, deleteMessage } from 'kektg';
+import { Message } from 'telegram-typings';
 
-import { bold } from '../lib/tgFormat.js';
+import { bold } from '../lib/tgFormat';
 
-async function parseUrl(url) {
+async function parseUrl(url: any) {
   const u = new URL(url);
   const path = u.pathname.split('/');
   let topicId = path[2];
-  const commentId = u.hash.split('_')[2];
+  const commentId:number = parseInt(u.hash.split('_')[2]);
 
   if (path[1] === 'link') {
     const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
@@ -17,22 +19,22 @@ async function parseUrl(url) {
   }
 
   return {
-    topic_id: topicId,
+    topic_id: parseInt(topicId),
     comment_id: commentId,
     full: url,
   };
 }
 
-async function grabComments(topicId) {
+async function grabComments(topicId: number) {
   const e = await axios.get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
   return e.data.comments;
 }
 
-function grabCommentById(c, id) {
-  return c.filter((e) => e.comm_id === id)[0];
+function grabCommentById(c: any, id: number) {
+  return c.filter((e:any) => e.comm_id === id)[0];
 }
 
-function timeAgo(ts) {
+function timeAgo(ts: number) {
   let fin = null;
   const times = [
     ['сек.', 1],
@@ -41,25 +43,25 @@ function timeAgo(ts) {
     ['дн.', 86400],
   ];
   const diff = Math.floor(Date.now() / 1000 - ts);
-  times.forEach((el) => {
+  times.forEach((el:any) => {
     if (diff / el[1] > 1) fin = `${Math.floor(diff / el[1])} ${el[0]}`;
   });
 
   return fin;
 }
 
-function t2e(text) {
+function t2e(text: string) {
   const emojis = ['🌚', '💬', '🏳️‍🌈', '🙂', '🤡', '💩', '🐔', '😂', '♿️', '👹'];
   const bytes = text.split('').map((e) => e.charCodeAt(0));
   const sum = bytes.reduce((x, y) => x + y);
   return emojis[sum % 10];
 }
 
-function buildResult(d, ld) {
+function buildResult(d: any, ld:any) {
   return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${d.content}`;
 }
 
-const main = async (msg) => {
+const main = async (msg: Message) => {
   const linkData = await parseUrl(msg.text);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
