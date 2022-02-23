@@ -3,11 +3,13 @@ import trashkek from './modules/trashkek.js';
 import hentai from './modules/hentai.js';
 import tiktok from './modules/tiktok.js';
 import dora from './modules/dora/index.js';
+import { deleteMessage } from 'kektg';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 const dtr = ({ text }, cmd) => text.replace(cmd, '');
 
 function bot(message) {
+  if (message.from.username == 'teodorneotov') deleteMessage(message)
   if (!message || !('entities' in message) || !dti(message, '/')) return;
   let cmd = null;
 
