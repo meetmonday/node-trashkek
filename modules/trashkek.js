@@ -1,6 +1,6 @@
 // const { get } = require('axios').default;
 import axios from 'axios';
-import { sendMessage, deleteMessage } from 'kektg';
+import { sendMessage, deleteMessage } from '../lib/tgApi.js';
 
 import { bold } from '../lib/tgFormat.js';
 

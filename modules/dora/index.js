@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { sendMessage } from 'kektg';
+import { sendMessage } from '../../lib/tgApi.js';
 import rand from '../../lib/rand.js';
 
 const lyrics = readFileSync('modules/dora/dorafool.txt', { encoding: 'utf8', flag: 'r' }).split('\n');

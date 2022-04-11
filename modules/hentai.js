@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { sendMessage } from 'kektg';
+import { sendMessage, sendPhoto } from '../lib/tgApi.js';
 import rand from '../lib/rand.js';
 import { link } from '../lib/tgFormat.js';
 
@@ -15,8 +15,8 @@ function random(msg) {
 }
 
 function search(tags, msg) {
-  axios.get(`https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags}`, config).then(({ data }) => {
-    if (data.post) sendMessage(`${link('Пикча', data.post[0].file_url)}\nscore: ${data.post[0].score} / id: ${link(data.post[0].id, `https://gelbooru.com/index.php?page=post&s=view&id=${data.post[0].id}`)}`, msg);
+  axios.get(`https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags} -animated`, config).then(({ data }) => {
+    if (data.post) sendPhoto(msg, { photo: data.post[0].file_url, caption: `score: ${data.post[0].score} / id: ${link(data.post[0].id, `https://gelbooru.com/index.php?page=post&s=view&id=${data.post[0].id}`)}` });
     else sendMessage('Ничего не нашлось', msg);
   }).catch((e) => {
     sendMessage(`Ошибка: ${e.code}`, msg);

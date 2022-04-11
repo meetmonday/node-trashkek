@@ -3,14 +3,12 @@ import trashkek from './modules/trashkek.js';
 import hentai from './modules/hentai.js';
 import tiktok from './modules/tiktok.js';
 import dora from './modules/dora/index.js';
-import { deleteMessage } from 'kektg';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 const dtr = ({ text }, cmd) => text.replace(cmd, '');
 
 function bot(message) {
-  if (message.from.username == 'teodorneotov') deleteMessage(message)
-  if (!message || !('entities' in message) || !dti(message, '/')) return;
+  if (!message || !('entities' in message) || !dti(message, '/') || !dti(message, '!')) return;
   let cmd = null;
 
   if (message.entities[0].type === 'bot_command') cmd = message.text.slice(message.entities[0].offset, message.entities[0].length);
@@ -22,6 +20,7 @@ function bot(message) {
   else if (dti(message, '#div_comment')) trashkek(message);
   else if (dti(message, 'tiktok.com/')) tiktok(message);
   else if (dti(message, '/ngforce')) dora.clip(message);
+  else if (dti(message, '!майн')) minecraft(message);
 }
 
 export default bot;

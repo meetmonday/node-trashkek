@@ -9,11 +9,12 @@ axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=$
 console.log('TRASHKEK RABOTAET... /// PORT:', process.env.PORT || 8080, process.env.WH_URL);
 
 createServer((req, res) => {
+  console.log(req)
   req.on('data', (chunk) => {
     try {
       bot(JSON.parse(chunk.toString()).message);
     } catch (e) {
-      console.log(e);
+      console.log("Брух, невалидный жсон");
     }
   });
   res.end();
