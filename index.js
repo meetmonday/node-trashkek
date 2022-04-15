@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { createServer } from 'http';
-import bot from './bot.js';
+import bot from './bot';
 
 axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`).then((e) => {
   console.log(e.data);
@@ -9,12 +9,11 @@ axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=$
 console.log('TRASHKEK RABOTAET... /// PORT:', process.env.PORT || 8080, process.env.WH_URL);
 
 createServer((req, res) => {
-  console.log(req)
   req.on('data', (chunk) => {
     try {
       bot(JSON.parse(chunk.toString()).message);
     } catch (e) {
-      console.log("Брух, невалидный жсон");
+      console.log('Брух, невалидный жсон');
     }
   });
   res.end();

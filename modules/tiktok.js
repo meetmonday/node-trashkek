@@ -1,5 +1,5 @@
 import { tiktokdownload } from 'tiktok-scraper-without-watermark';
-import { sendMessage, sendVideo } from '../lib/tgApi.js';
+import { sendMessage, sendVideo } from '../lib/tgApi';
 
 function main(msg) {
   tiktokdownload(msg.text)

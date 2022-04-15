@@ -1,4 +1,3 @@
-// const { get } = require('axios').default;
 import axios from 'axios';
 import { sendMessage, deleteMessage } from '../lib/tgApi.js';
 

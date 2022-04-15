@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { sendMessage, sendPhoto } from '../lib/tgApi.js';
-import rand from '../lib/rand.js';
-import { link } from '../lib/tgFormat.js';
+import { sendMessage, sendPhoto } from '../lib/tgApi';
+import rand from '../lib/rand';
+import { link } from '../lib/tgFormat';
 
 const config = process.env.HENTAI_PROXY ? {
   proxy: {

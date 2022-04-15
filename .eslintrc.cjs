@@ -14,6 +14,6 @@ module.exports = {
   rules: {
     'no-console': 'off',
     'linebreak-style': 'off',
-    'import/extensions': 'always',
+    // 'import/extensions': 'always',
   },
 };
