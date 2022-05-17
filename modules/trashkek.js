@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { sendMessage, deleteMessage } from '../lib/tgApi.js';
+import { sendMessage, deleteMessage } from '../lib/tgApi';
 
-import { bold } from '../lib/tgFormat.js';
+import { bold } from '../lib/tgFormat';
 
 async function parseUrl(url) {
   const u = new URL(url);

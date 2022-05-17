@@ -10,9 +10,7 @@ const config = process.env.HENTAI_PROXY ? {
   },
 } : {};
 
-function random(msg) {
-  sendMessage(link('Пикча', `https://danbooru.donmai.us/posts/${rand(0, 5013920)}`), msg);
-}
+const random = (msg) => sendMessage(link('Пикча', `https://danbooru.donmai.us/posts/${rand(0, 5013920)}`), msg);
 
 function search(tags, msg) {
   axios.get(`https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags} -animated`, config).then(({ data }) => {

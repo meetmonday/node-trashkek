@@ -1,13 +1,16 @@
 import { tiktokdownload } from 'tiktok-scraper-without-watermark';
-import { sendMessage, sendVideo } from '../lib/tgApi';
+import { deleteMessage, sendMessage, sendVideo } from '../lib/tgApi';
 
 function main(msg) {
-  tiktokdownload(msg.text)
-    .then((result) => {
-      if (result.nowm) sendVideo(msg, { video: result.nowm });
-      else sendMessage('Чета пошло не так, и текток не скачался', msg);
-    })
-    .catch((e) => sendMessage(`Чета не так пошло\n||${e}||`, msg));
+  sendMessage('Ща будет текток.........', msg, {}, ({ result: del }) => {
+    tiktokdownload(msg.text)
+      .then((ttres) => {
+        if (!ttres.nowm) { sendMessage('Чета пошло не так, и текток не скачался', msg); return; }
+        sendVideo(msg, { video: ttres.nowm });
+        deleteMessage({ chat: { id: del.chat.id }, messageId: del.message_id });
+      })
+      .catch((e) => sendMessage(`Чета не так пошло\n||${e}||`, msg));
+  });
 }
 
 export default main;
