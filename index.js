@@ -7,6 +7,10 @@ axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=$
 });
 
 createServer((req, res) => {
-  req.on('data', (chunk) => bot(JSON.parse(chunk.toString()).message));
+  req.on('data', (chunk) => {
+    try {
+      bot(JSON.parse(chunk.toString()).message);
+    } catch { console.log('bruh'); }
+  });
   res.end();
 }).listen(process.env.PORT || 8080);
