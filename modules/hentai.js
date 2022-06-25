@@ -21,4 +21,6 @@ function search(tags, msg) {
   });
 }
 
-export default { search, random };
+const hentaiRouter = (msg, args) => { if (args) search(args, msg); else random(msg); };
+
+export default hentaiRouter;
