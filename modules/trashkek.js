@@ -64,9 +64,7 @@ const main = async (msg) => {
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
-  sendMessage(result, msg, { disablePreview: true, htmlParseMode: false }, (d) => {
-    console.log(d);
-  });
+  sendMessage(result, msg, { disablePreview: true, htmlParseMode: false });
   deleteMessage(msg);
 };
 
