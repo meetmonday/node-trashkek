@@ -16,8 +16,7 @@
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "minecraft-server-ping": "^0.0.8",
-    "tiktok-scraper-without-watermark": "^1.1.3",
-    "turndown": "^7.1.1"
+    "tiktok-scraper-without-watermark": "^1.1.3"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
