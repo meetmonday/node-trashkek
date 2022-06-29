@@ -20,7 +20,7 @@
     "turndown": "^7.1.1"
   },
   "devDependencies": {
-    "eslint": "^8.13.0",
+    "eslint": "^8.18.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4"
   }

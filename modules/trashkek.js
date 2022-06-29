@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { sendMessage, deleteMessage } from '../lib/tgApi';
 
-import { bold } from '../lib/tgFormat';
+import { bold, link } from '../lib/tgFormat';
+import h2md from '../lib/h2md';
 
 async function parseUrl(url) {
   const u = new URL(url);
@@ -55,7 +56,7 @@ function t2e(text) {
 }
 
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, [#️⃣](${ld.full}) (${d.votes})\n${d.content}`;
+  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, ${link('#️⃣', ld.full)} (${d.votes})\n${h2md(d.content)}`;
 }
 
 const main = async (msg) => {
@@ -63,7 +64,9 @@ const main = async (msg) => {
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const result = buildResult(comment, linkData);
-  sendMessage(result, msg, { disablePreview: true });
+  sendMessage(result, msg, { disablePreview: true, htmlParseMode: false }, (d) => {
+    console.log(d);
+  });
   deleteMessage(msg);
 };
 

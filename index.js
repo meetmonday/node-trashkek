@@ -1,10 +1,7 @@
-import axios from 'axios';
 import { createServer } from 'http';
 import bot from './bot';
 
-axios.get(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`).then((e) => {
-  console.log(e.data);
-});
+fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${process.env.WH_URL}`);
 
 createServer((req, res) => {
   req.on('data', (chunk) => {
