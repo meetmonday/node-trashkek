@@ -7,7 +7,7 @@ function main(msg) {
       .then((ttres) => {
         if (!ttres.nowm) { sendMessage('Чета пошло не так, и текток не скачался', msg); return; }
         sendVideo(msg, { video: ttres.nowm });
-        deleteMessage({ chat: { id: del.chat.id }, messageId: del.message_id });
+        deleteMessage({ chat: { id: del.chat.id }, message_id: del.message_id });
       })
       .catch((e) => sendMessage(`Чета не так пошло\n||${e}||`, msg));
   });
