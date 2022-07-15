@@ -1,4 +1,4 @@
-import { tiktokdownload } from 'tiktok-scraper-without-watermark';
+import { tiktokdownload } from 'tsww';
 import { deleteMessage, sendMessage, sendVideo } from '../lib/tgApi';
 
 function main(msg) {
