@@ -1,8 +1,9 @@
 import trashkek from './modules/trashkek';
-// import hentai from './modules/hentai';
+import hentai from './modules/hentai';
 import tiktok from './modules/tiktok';
 import dora from './modules/dora/index';
 import minecraft from './modules/minecraft';
+import shiza from './modules/shiza';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 
@@ -16,7 +17,8 @@ function bot(message) {
     '/ngforce': dora.clip,
     '/dora': dora.clip,
     '/mctaran': minecraft,
-    '/hentai': dora.lyric,
+    '/hentai': hentai,
+    '/shiza': shiza,
   };
 
   if (cmd in funcList) funcList[cmd](message, args);
