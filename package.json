@@ -10,7 +10,11 @@
   "scripts": {
     "start": "node --experimental-specifier-resolution=node index",
     "dev": "node --experimental-specifier-resolution=node -r dotenv/config index",
-    "devng": "WH_URL=$(curl http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url) && node -r dotenv/config index && WH_URL="
+    "dev:watch": "nodemon --experimental-specifier-resolution=node -r dotenv/config"
+  },
+  "nodemonConfig": {
+    "ignore": ["**/pdb/**"],
+    "delay": 1000
   },
   "dependencies": {
     "axios": "^0.24.0",

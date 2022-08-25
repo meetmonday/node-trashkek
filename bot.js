@@ -4,6 +4,7 @@ import tiktok from './modules/tiktok';
 import dora from './modules/dora/index';
 import minecraft from './modules/minecraft';
 import shiza from './modules/shiza';
+import doragun from './modules/doragun';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 
@@ -19,6 +20,9 @@ function bot(message) {
     '/mctaran': minecraft,
     '/hentai': hentai,
     '/shiza': shiza,
+    '/doracreate': doragun.newGame,
+    '/dorajoin': doragun.joinGame,
+    '/dorajoined': doragun.joinedList,
   };
 
   if (cmd in funcList) funcList[cmd](message, args);
