@@ -15,7 +15,7 @@
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "minecraft-server-ping": "^0.0.8",
-    "tsww": "github:meetmonday/tsww@latest"
+    "tsww": "github:meetmonday/tsww"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
