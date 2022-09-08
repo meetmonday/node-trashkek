@@ -9,14 +9,13 @@
   "type": "module",
   "scripts": {
     "start": "node --experimental-specifier-resolution=node index",
-    "dev": "node --experimental-specifier-resolution=node -r dotenv/config index",
-    "devng": "WH_URL=$(curl http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url) && node -r dotenv/config index && WH_URL="
+    "dev": "node --experimental-specifier-resolution=node -r dotenv/config index"
   },
   "dependencies": {
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "minecraft-server-ping": "^0.0.8",
-    "tsww": "github:meetmonday/tsww"
+    "tsww": "github:meetmonday/tsww@latest"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
