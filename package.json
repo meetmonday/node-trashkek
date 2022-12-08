@@ -8,8 +8,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node index",
-    "dev": "node --experimental-specifier-resolution=node -r dotenv/config index"
+    "start:wh": "node --experimental-specifier-resolution=node f_webhook.js",
+    "dev:wh": "node --experimental-specifier-resolution=node -r dotenv/config f_webhook.js",
+    "start:lp": "node --experimental-specifier-resolution=node f_longpoll.js",
+    "dev:lp": "node --experimental-specifier-resolution=node -r dotenv/config f_longpoll.js"
   },
   "dependencies": {
     "@meetmonday/tsww": "meetmonday/tsww",
