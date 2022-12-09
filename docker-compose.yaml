@@ -1,0 +1,9 @@
+version: '3.4'
+services:
+  application:
+    container_name: trashkek_application
+    build:
+      context: .
+    restart: always
+    env_file:
+      - .env
