@@ -18,7 +18,7 @@ async function subscribe() {
     // Какая-то ошибка, покажем её
     console.log(response.statusText);
     // Подключимся снова через секунду.
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await subscribe();
   } else {
     // Получим и покажем сообщение
