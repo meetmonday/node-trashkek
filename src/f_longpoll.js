@@ -1,7 +1,7 @@
 // реально взял код отсюда https://learn.javascript.ru/long-polling
 // работает и похуй
 
-import bot from "./bot";
+import bot from "#src/bot.js";
 
 let offset = 0;
 

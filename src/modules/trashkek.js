@@ -1,8 +1,10 @@
 import axios from 'axios';
-import { sendMessage, deleteMessage } from '../lib/tgApi';
+import { sendMessage, deleteMessage } from '#lib/tgApi';
 
-import { bold, link } from '../lib/tgFormat';
-import h2md from '../lib/h2md';
+import { bold, link } from '#lib/helpers';
+// import h2md from '../lib/h2md';
+function h2md(h) { return h; }
+// плейсхолдер ебать, потом переделаю
 
 async function parseUrl(url) {
   const u = new URL(url);

@@ -8,20 +8,24 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start:wh": "node --experimental-specifier-resolution=node f_webhook.js",
-    "dev:wh": "node --experimental-specifier-resolution=node -r dotenv/config f_webhook.js",
-    "start:lp": "node --experimental-specifier-resolution=node f_longpoll.js",
-    "dev:lp": "node --experimental-specifier-resolution=node -r dotenv/config f_longpoll.js"
+    "start:wh": "node --experimental-specifier-resolution=node ./src/f_webhook.js",
+    "dev:wh": "node --experimental-specifier-resolution=node -r dotenv/config ./src/f_webhook.js",
+    "start:lp": "node --experimental-specifier-resolution=node ./src/f_longpoll.js",
+    "dev:lp": "node --experimental-specifier-resolution=node -r dotenv/config ./src/f_longpoll.js"
   },
   "dependencies": {
     "@meetmonday/tsww": "meetmonday/tsww",
     "axios": "^0.24.0",
-    "dotenv": "^10.0.0",
-    "minecraft-server-ping": "^0.0.8"
+    "dotenv": "^10.0.0"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4"
+  },
+  "imports": {
+    "#modules/*": "./src/modules/*.js",
+    "#lib/*": "./src/lib/*.js",
+    "#src/*": "./src/*"
   }
 }
