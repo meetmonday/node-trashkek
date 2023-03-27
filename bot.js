@@ -2,7 +2,7 @@ import trashkek from './modules/trashkek';
 import hentai from './modules/hentai';
 import tiktok from './modules/tiktok';
 import dora from './modules/dora/index';
-import gpt from './modules/gpt';
+import { gptcCommand, gptCommand } from './modules/gpt';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 
@@ -16,7 +16,8 @@ function bot(message) {
     '/ngforce': dora.clip,
     '/dora': dora.clip,
     '/hentai': hentai,
-    '/gpt': gpt
+    '/gpt': gptCommand,
+    '/gptc': gptcCommand
   };
 
   if (cmd in funcList) funcList[cmd](message, args);
