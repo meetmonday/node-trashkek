@@ -1,9 +1,17 @@
+<<<<<<< Updated upstream:bot.js
 import trashkek from './modules/trashkek';
 import hentai from './modules/hentai';
 import tiktok from './modules/tiktok';
 import dora from './modules/dora/index';
 import minecraft from './modules/minecraft';
 import shiza from './modules/shiza';
+=======
+import trashkek from '#modules/trashkek';
+import hentai from '#modules/hentai';
+import tiktok from '#modules/tiktok';
+import dora from '#modules/dora/index';
+import gpt from '#modules/gpt';
+>>>>>>> Stashed changes:src/bot.js
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 
@@ -18,7 +26,11 @@ function bot(message) {
     '/dora': dora.clip,
     '/mctaran': minecraft,
     '/hentai': hentai,
+<<<<<<< Updated upstream:bot.js
     '/shiza': shiza,
+=======
+    '/gpt': gpt
+>>>>>>> Stashed changes:src/bot.js
   };
 
   if (cmd in funcList) funcList[cmd](message, args);
