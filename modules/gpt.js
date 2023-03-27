@@ -1,5 +1,5 @@
 import axios from "axios";
-import { sendMessage } from '#lib/tgApi';
+import { sendMessage } from '../lib/tgApi';
 
 function main(msg, args) {
   axios.post('https://www.t3nsor.tech/api/chat', {
