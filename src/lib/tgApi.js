@@ -9,7 +9,7 @@ function sendMessage(text, { chat }, { disablePreview, htmlParseMode } = {}, cal
     chat_id: chat.id,
     parse_mode: htmlParseMode ? 'HTML' : 'Markdown',
     disable_web_page_preview: disablePreview || false,
-  }).then(({ data }) => callback(data)).catch(({ err }) => { console.log(err); });
+  }).then(({ data }) => callback(data)).catch((err) => { console.log(err); });
 }
 
 function deleteMessage({ chat, message_id }) {

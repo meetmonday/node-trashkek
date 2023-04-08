@@ -1,12 +1,12 @@
+/* eslint-disable prefer-destructuring */
 import axios from 'axios';
-import { sendMessage, deleteMessage } from '#lib/tgApi';
+import striptags from 'striptags';
 
+import { sendMessage, deleteMessage } from '#lib/tgApi';
 import { bold, link } from '#lib/helpers';
-// import h2md from '../lib/h2md';
-function h2md(h) { return h; }
-// плейсхолдер ебать, потом переделаю
 
 async function parseUrl(url) {
+  let title = '#';
   const u = new URL(url);
   const path = u.pathname.split('/');
   let topicId = path[2];
@@ -14,14 +14,15 @@ async function parseUrl(url) {
 
   if (path[1] === 'link') {
     const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
-    // eslint-disable-next-line prefer-destructuring
     topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
+    title = data.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>\s*<link>https:\/\/trashbox\.ru\/link.*<\/link>/)[1];
   }
 
   return {
     topic_id: topicId,
     comment_id: commentId,
     full: url,
+    title,
   };
 }
 
@@ -57,16 +58,39 @@ function t2e(text) {
   return emojis[sum % 10];
 }
 
+function replaceImgWithLink(htmlString) {
+  let images = false;
+  const newHtmlString = htmlString.replace(/<img([^>]*)>/gi, (match, p1) => {
+    const srcMatch = p1.match(/src=(["'])(.*?)\1/);
+    const src = srcMatch ? srcMatch[2] : '';
+    images = true;
+    return `<a href="https://trashbox.ru${src}">🖼 Пикча</a>`;
+  });
+  return { html: newHtmlString, images };
+}
+
+function cook(data) {
+  const fin = striptags(
+    data
+      .replaceAll('<br/>   ', '\n')
+      .replaceAll('<li>', '- ')
+      .replaceAll('</li>', '\n'),
+    ['b', 'i', 'u', 'strike', 'a', 'img'],
+  );
+  return fin;
+}
+
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад, ${link('#️⃣', ld.full)} (${d.votes})\n${h2md(d.content)}`;
+  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад, ${d.votes > 0 ? `+${d.votes}` : d.votes}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
 }
 
 const main = async (msg) => {
   const linkData = await parseUrl(msg.text);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
-  const result = buildResult(comment, linkData);
-  sendMessage(result, msg, { disablePreview: true, htmlParseMode: false });
+  const midresult = buildResult(comment, linkData);
+  const result = replaceImgWithLink(midresult);
+  sendMessage(result.html, msg, { disablePreview: !result.images, htmlParseMode: true });
   deleteMessage(msg);
 };
 

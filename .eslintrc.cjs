@@ -14,7 +14,8 @@ module.exports = {
   rules: {
     'no-console': 'off',
     'linebreak-style': 'off',
-    // 'import/extensions': 'always',
+    'import/extensions': 0,
     'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
+    'import/no-unresolved': [2, { commonjs: true, amd: true }],
   },
 };
