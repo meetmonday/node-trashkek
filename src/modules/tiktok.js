@@ -1,5 +1,5 @@
-import { tiktokdownload } from '../lib/tswwMini';
-import { deleteMessage, sendMessage, sendVideo } from '../lib/tgApi';
+import { tiktokdownload } from '#lib/tswwMini';
+import { deleteMessage, sendMessage, sendVideo } from '#lib/tgApi';
 
 function main(msg) {
   sendMessage('Ща будет текток.........', msg, {}, ({ result: del }) => {
@@ -8,7 +8,7 @@ function main(msg) {
         sendVideo(msg, { video: ttres });
         deleteMessage({ chat: { id: del.chat.id }, message_id: del.message_id });
       })
-      .catch((e) => sendMessage(`Чета не так пошло............`, msg));
+      .catch(() => sendMessage('Чета не так пошло........', msg));
   });
 }
 
