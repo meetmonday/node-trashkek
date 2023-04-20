@@ -12,11 +12,12 @@ async function parseUrl(url) {
   let topicId = path[2];
   const commentId = u.hash.split('_')[2];
 
-  if (path[1] === 'link') {
-    const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
-    topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
-    title = data.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>\s*<link>https:\/\/trashbox\.ru\/link.*<\/link>/)[1];
-  }
+  // if (path[1] === 'link') {
+  const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
+  topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
+  title = Array.from(data.matchAll(/<!\[CDATA\[(.*?)\]\]>/g))[1][1];
+  console.log(title);
+  // }
 
   return {
     topic_id: topicId,
@@ -81,7 +82,7 @@ function cook(data) {
 }
 
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад, ${d.votes > 0 ? `+${d.votes}` : d.votes}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
+  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `, ${d.votes}` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
 }
 
 const main = async (msg) => {
