@@ -1,26 +1,17 @@
 import { sendMessage } from '#lib/tgApi';
 
+function timeAgo() {
+	const date1 = new Date()
+	const date2 = new Date("04/23/2024")
+	
+	var Difference_In_Time = date2.getTime() - date1.getTime()
+    var fin = Difference_In_Time / (1000 * 3600 * 24);
 
-function timeAgo(ts) {
-  let fin = null;
-  const times = [
-    ['сек.', 1],
-    ['мин.', 60],
-    ['ч.', 3600],
-    ['дн.', 86400],
-  ];
-  const diff = Math.floor(Date.now() / 1000 - ts);
-  times.forEach((el) => {
-    if (diff / el[1] > 1) fin = `${Math.floor(diff / el[1])} ${el[0]}`;
-  });
-
-  return fin;
+	return Math.round(fin)
 }
 
-
-
 function main(msg) {
-  const skolko = timeAgo(1713812400)
+  const skolko = timeAgo()
   sendMessage(`v armii eshe ${skolko} dn. ebat`, msg);
 }
 
