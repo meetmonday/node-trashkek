@@ -1,13 +1,10 @@
-const { sendMessagessage } = require('node-telegram-bot-api');
-const fs = require('fs');
-
-// Создаем бота и указываем токен
-const bot = new TelegramBot('TOKEN', { polling: true });
+import { sendMessage } from '#lib/tgApi';
+import { readFileSync } from 'fs';
 
 // Читаем файл с фразами
 let phrases = [];
 try {
-  const data = fs.readFileSync('phrases.json');
+  const data = readFileSync('phrases.json');
   phrases = JSON.parse(data);
 } catch (err) {
   console.error(err);
@@ -21,18 +18,22 @@ function savePhrases() {
 }
 
 // Функция для обработки команды /shiza
-bot.onText(/\/shiza/, (msg) => {
+function shiz(msg) {
   // Выбираем случайную фразу и отправляем ее пользователю
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-  bot.sendMessage(msg.chat.id, randomPhrase);
+  sendMessage(randomPhrase, msg);
 });
 
-// Функция для обработки команды /shizaadd
-bot.onText(/\/shizaadd (.+)/, (msg, match) => {
+// Функция для обработки команды /shiza add
+function shizad(msg) {
   // Получаем фразу из аргументов команды
-  const phrase = match[1];
+  const phrase = msg.message.reply_to_message.text;
   // Добавляем фразу в массив и сохраняем в файл
   phrases.push(phrase);
   savePhrases();
-  bot.sendMessage(msg.chat.id, 'Фраза добавлена в базу данных');
+  sendMessage('Фраза добавлена в базу данных', msg);
 });
+
+const shizaRouter = (msg, args) => (args ? shizad(args, msg) : shiz(msg));
+
+export default shizaRouter;
