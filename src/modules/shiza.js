@@ -22,7 +22,7 @@ function shiz(msg) {
   // Выбираем случайную фразу и отправляем ее пользователю
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
   sendMessage(randomPhrase, msg);
-});
+};
 
 // Функция для обработки команды /shiza add
 function shizad(msg) {
@@ -32,7 +32,7 @@ function shizad(msg) {
   phrases.push(phrase);
   savePhrases();
   sendMessage('Фраза добавлена в базу данных', msg);
-});
+};
 
 const shizaRouter = (msg, args) => (args ? shizad(args, msg) : shiz(msg));
 
