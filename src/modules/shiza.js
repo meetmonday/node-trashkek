@@ -1,10 +1,10 @@
 import { sendMessage } from '#lib/tgApi';
-import { readFileSync } from 'fs';
+import fs from 'fs';
 
 // Читаем файл с фразами
 let phrases = [];
 try {
-  const data = readFileSync('phrases.json');
+  const data = fs.readFileSync('phrases.json');
   phrases = JSON.parse(data);
 } catch (err) {
   console.error(err);
