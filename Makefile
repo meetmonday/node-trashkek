@@ -1,5 +1,6 @@
 ifneq ($(MAKECMDGOALS),env-dump)
-include .env
+-include .env
+export
 endif
 
 .PHONY: help
@@ -11,11 +12,11 @@ help: ## Displays help for a command
 	@printf "\033[33mUsage:\033[0m\n  make [options] [target] ...\n\n\033[33mAvailable targets:%-13s\033[0m\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' 'Makefile' | awk 'BEGIN {FS = ":.*?## "}; {printf "%-2s\033[32m%-17s\033[0m %s\n", "", $$1, $$2}'
 
-container-build: ## Builds the application's docker containers
-	$(DOCKER_COMPOSE) build --parallel --compress --force-rm
-
 container-down: ## Shutdown docker application containers
 	$(DOCKER_COMPOSE) down --remove-orphans
+
+container-pull:
+	$(DOCKER_COMPOSE) pull
 
 container-up: ## Launches docker application containers
 	$(DOCKER_COMPOSE) up --detach --remove-orphans --force-recreate
@@ -27,5 +28,5 @@ env-dump: ## Merge current environment with dotenv file
 	printenv | awk '/^[^#].+$$/ {sub(/=/," ");c[$$1]++;if(2==c[$$1]){print $$1"="$$2}}' $(src) - $(src) > $(dest)
 
 run: ## Executes the application launch
-	$(MAKE) container-build
+	$(MAKE) container-pull
 	$(MAKE) container-up
