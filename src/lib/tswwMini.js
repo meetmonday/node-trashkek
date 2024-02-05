@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const INSTANCE = 'https://proxitok.pussthecat.org/';
+const INSTANCE = 'https://proxitok.pabloferreiro.es/';
 function legacyDownload(url) {
   const path = url.match(/tiktok.com\/(.*)\//)[1];
   return new Promise((resolve, reject) => {
