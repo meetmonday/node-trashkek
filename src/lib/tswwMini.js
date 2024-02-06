@@ -6,7 +6,7 @@ function legacyDownload(url) {
   return new Promise((resolve, reject) => {
     axios.get(`${INSTANCE}/@placeholder/video/${path}`).then((e) => {
       const links = e.data.match(/<a target="_blank" href=".*" /gi);
-      resolve(`${INSTANCE}${decodeURIComponent(links[1].slice(25))}`);
+      resolve(`${decodeURIComponent(links[1].slice(25))}`);
     }).catch((e) => {
       reject(e);
     });
