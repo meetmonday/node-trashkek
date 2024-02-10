@@ -3,6 +3,7 @@ import hentai from '#modules/hentai';
 import tiktok from '#modules/tiktok';
 import dora from '#modules/dora/index';
 import gdestas from '#modules/gdestas';
+import kogda from '#modules/kogda;
 import shiza from '#modules/shiza/index';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
@@ -18,7 +19,8 @@ function bot(message) {
     '/dora': dora.clip,
     '/hentai': hentai,
     '/gdestas': gdestas,
-    '/shiza': shiza
+    '/shiza': shiza,
+    '/ngwhen': kogda,
   };
 
   if (cmd in funcList) funcList[cmd](message, args);
