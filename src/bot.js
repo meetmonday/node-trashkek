@@ -3,7 +3,7 @@ import hentai from '#modules/hentai';
 import tiktok from '#modules/tiktok';
 import dora from '#modules/dora/index';
 import gdestas from '#modules/gdestas';
-import kogda from '#modules/kogda;
+import kogda from '#modules/kogda';
 import shiza from '#modules/shiza/index';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
