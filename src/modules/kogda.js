@@ -1,45 +1,35 @@
 import { sendMessage } from '#lib/tgApi';
 
-function declensionOfNoun(number, one, few, many) {
-    let n = Math.abs(number) % 100;
-    let n1 = n % 10;
-
-    if (n > 10 && n < 20) {
-        return many;
+function getWordForm(number, forms) {
+    if (number % 10 == 1 && number % 100 != 11) {
+        return forms[0];
+    } else if (number % 10 >= 2 && number % 10 <= 4 && (number % 100 < 10 || number % 100 >= 20)) {
+        return forms[1];
+    } else {
+        return forms[2];
     }
-    if (n1 > 1 && n1 < 5) {
-        return few;
-    }
-    if (n1 === 1) {
-        return one;
-    }
-    return many;
 }
 
-function getTimeUntilMidnightUTC() {
-    let now = new Date();
-    let midnightUTC = new Date(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        0, 0, 0, 0
-    );
+function getTimeDiffToNextMidnight() {
+    const now = new Date();
+    const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
 
-    let differenceInSeconds = (midnightUTC.getTime() - now.getTime()) / 1000;
+    const diff = nextMidnight - now;
 
-    let hours = Math.floor(differenceInSeconds / 3600);
-    let minutes = Math.floor((differenceInSeconds % 3600) / 60);
-    let seconds = Math.floor(differenceInSeconds % 60);
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
 
-    let hoursSuffix = declensionOfNoun(hours, 'час', 'часа', 'часов');
-    let minutesSuffix = declensionOfNoun(minutes, 'минута', 'минуты', 'минут');
-    let secondsSuffix = declensionOfNoun(seconds, 'секунда', 'секунды', 'секунд');
+    const hourWord = getWordForm(hours, ['час', 'часа', 'часов']);
+    const minuteWord = getWordForm(minutes, ['минута', 'минуты', 'минут']);
+    const secondWord = getWordForm(seconds, ['секунда', 'секунды', 'секунд']);
 
-    return `наган будет стрелять через  ${Math.abs(hours)} ${hoursSuffix} ${Math.abs(minutes)} ${minutesSuffix} и ${Math.abs(seconds)} ${secondsSuffix}, а таран лох и не осилил`;
+    console.log(`наган будет готов через ${hours} ${hourWord} ${minutes} ${minuteWord} и ${seconds} ${secondWord}`);
 }
+
 
 function main(msg) {
-  sendMessage(getTimeUntilMidnightUTC(), msg);
+  sendMessage(getTimeDiffToNextMidnight(), msg);
 }
 
 export default main;
