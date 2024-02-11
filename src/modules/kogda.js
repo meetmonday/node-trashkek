@@ -24,7 +24,7 @@ function getTimeDiffToNextMidnight() {
     const minuteWord = getWordForm(minutes, ['минута', 'минуты', 'минут']);
     const secondWord = getWordForm(seconds, ['секунда', 'секунды', 'секунд']);
 
-    console.log(`наган будет готов через ${hours} ${hourWord} ${minutes} ${minuteWord} и ${seconds} ${secondWord}`);
+    return `наган будет готов через ${hours} ${hourWord} ${minutes} ${minuteWord} и ${seconds} ${secondWord}`;
 }
 
 
