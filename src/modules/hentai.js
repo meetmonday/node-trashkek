@@ -23,7 +23,7 @@ function search(tags, msg) {
       if (data.post) {
         const post = data.post[0];
         const photo = post.file_url;
-        const caption = `score: ${post.score} / id: ${link(post.id, \`https://gelbooru.com/index.php?page=post&s=view&id=${post.id}`)}`;
+        const caption = `score: ${post.score} / id: ${link(post.id, 'https://gelbooru.com/index.php?page=post&s=view&id=${post.id}')}`;
         sendPhoto(msg, { photo, caption });
       } else {
         sendMessage('Ничего не нашлось', msg);
