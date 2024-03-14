@@ -18,7 +18,7 @@
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "striptags": "^3.2.0",
-    "cheerio": "^1.0.0-rc.6",
+    "cheerio": "^1.0.0-rc.6"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
