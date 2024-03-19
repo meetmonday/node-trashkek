@@ -1,6 +1,7 @@
 import trashkek from '#modules/trashkek';
 import hentai from '#modules/hentai';
 import tiktok from '#modules/tiktok';
+import youtube from '#modules/youtube';
 import dora from '#modules/dora/index';
 import gdestas from '#modules/gdestas';
 import kogda from '#modules/kogda';
@@ -26,6 +27,7 @@ function bot(message) {
   if (cmd in funcList) funcList[cmd](message, args);
   else if (dti(message, '#div_comment')) trashkek(message);
   else if (dti(message, 'tiktok.com/')) tiktok(message);
+  else if (dti(message, 'youtube.com/') || dti(message, 'youtu.be/')) youtube(message);
 }
 
 export default bot;
