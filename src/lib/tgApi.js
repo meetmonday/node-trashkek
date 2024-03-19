@@ -33,6 +33,8 @@ function sendVideo({ chat }, { video, caption } = {}) {
     chat_id: chat.id,
     video,
     caption,
+  }).catch((e) => {
+    sendMessage('Пашок, што за `' + e.response.data.description + '`', { chat: chat })
   });
 }
 
