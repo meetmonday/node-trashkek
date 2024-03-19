@@ -34,7 +34,7 @@ function sendVideo({ chat }, { video, caption } = {}) {
     video,
     caption,
   }).catch((e) => {
-    sendMessage('Пашок, што за `' + e.response.data.description + '`', { chat: chat })
+    sendMessage("Пашок, што за `" + e.response.data.description + "`.\nУрыл: " + video, { chat: chat })
   });
 }
 
