@@ -16,9 +16,10 @@
   "dependencies": {
     "@meetmonday/tsww": "meetmonday/tsww",
     "axios": "^0.24.0",
+    "cheerio": "^1.0.0-rc.6",
     "dotenv": "^10.0.0",
-    "striptags": "^3.2.0",
-    "cheerio": "^1.0.0-rc.6"
+    "nayan-media-downloader": "^2.0.9",
+    "striptags": "^3.2.0"
   },
   "devDependencies": {
     "eslint": "^8.18.0",
