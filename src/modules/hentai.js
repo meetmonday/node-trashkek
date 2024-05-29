@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { sendMessage, sendPhoto } from '#lib/tgApi';
+import { sendChatAction, sendMediaGroup, sendMessage, sendPhoto } from '#lib/tgApi';
 import { rand, link } from '#lib/helpers';
 
 const config = process.env.HENTAI_PROXY ? {
@@ -15,7 +15,7 @@ const random = (msg) => {
   sendMessage(link('Пикча', randomImageUrl), msg);
 };
 
-function search(tags, msg) {
+function searchLegacy(tags, msg) {
   const searchUrl = `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=1&tags=sort:random ${tags} -animated`;
 
   axios.get(searchUrl, config)
@@ -23,11 +23,34 @@ function search(tags, msg) {
       if (data.post) {
         const post = data.post[0];
         const photo = post.file_url;
-        const caption = `score: ${post.score} / id: ${link(post.id, 'https://gelbooru.com/index.php?page=post&s=view&id=${post.id}')}`;
+        const caption = `score: ${post.score} / id: ${link(post.id, 'https://gelbooru.com/index.php?page=post&s=view&id='+post.id)}`;
         sendPhoto(msg, { photo, caption });
       } else {
         sendMessage('Ничего не нашлось', msg);
       }
+    })
+    .catch((e) => {
+      sendMessage(`Ошибка: ${e.code}`, msg);
+    });
+}
+
+function search(tags, msg) {
+  sendChatAction(msg, 'upload_photo')
+  const searchUrl = `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=10&tags=sort:random ${tags} -animated`;
+
+  axios.get(searchUrl, config)
+    .then(({ data }) => {
+      if(data['@attributes'].count == 0) { sendMessage('Ничего не нашлось', msg); return false; }
+        const photos = data.post.map((e)=>{
+          return {
+            file: e.file_url,
+            spoiler: e.rating == 'explicit' ? true : false,
+            caption: `score: ${e.score} / id: ${link(e.id, 'https://gelbooru.com/index.php?page=post&s=view&id='+e.id)}`,
+          }
+        })
+
+        sendMediaGroup(msg, { photos });
+
     })
     .catch((e) => {
       sendMessage(`Ошибка: ${e.code}`, msg);

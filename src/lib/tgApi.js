@@ -19,6 +19,25 @@ function deleteMessage({ chat, message_id }) {
   }).catch((err) => { console.log(err); });
 }
 
+function sendMediaGroup({ chat }, { photos } = {}) {
+  const inputMediaPhoto = photos.map((e)=> {
+    return {
+      type: 'photo',
+      media: e.file,
+      has_spoiler: e.spoiler,
+      caption: e.caption,
+      parse_mode: 'Markdown'
+    }
+  })
+  axios.post(`${tgAPI}/sendMediaGroup`, {
+    chat_id: chat.id,
+    media: inputMediaPhoto,
+    caption: 'test'
+  }).catch((e) => {
+    sendMessage(`Пашок, што за ${e.response.data.description}`);
+  });
+}
+
 function sendPhoto({ chat }, { photo, caption } = {}) {
   axios.post(`${tgAPI}/sendPhoto`, {
     chat_id: chat.id,
@@ -53,6 +72,14 @@ function answerInlineQuery(id, results) {
   });
 }
 
+function sendChatAction({ chat }, action) {
+  axios.post(`${tgAPI}/sendChatAction`, {
+    chat_id: chat.id,
+    action
+  });
+}
+
 export {
   sendMessage, deleteMessage, sendVideo, sendPhoto, sendDocument, answerInlineQuery,
+  sendMediaGroup, sendChatAction
 };

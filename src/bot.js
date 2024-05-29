@@ -5,7 +5,8 @@ import youtube from '#modules/youtube';
 import dora from '#modules/dora/index';
 import gdestas from '#modules/gdestas';
 import kogda from '#modules/kogda';
-import shiza from '#modules/shiza/index';
+import { gptCommand } from '#modules/chatgpt';
+import { nagangpt } from '#modules/nagangpt';
 
 const dti = ({ text }, cmd) => text.includes(cmd);
 
@@ -20,8 +21,9 @@ function bot(message) {
     '/dora': dora.clip,
     '/hentai': hentai,
     '/gdestas': gdestas,
-    '/shiza': shiza,
     '/ngwhen': kogda,
+    '/gpt': gptCommand,
+    '/ng': nagangpt
   };
 
   if (cmd in funcList) funcList[cmd](message, args);

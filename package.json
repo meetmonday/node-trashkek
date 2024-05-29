@@ -9,9 +9,9 @@
   "type": "module",
   "scripts": {
     "start:wh": "node --experimental-specifier-resolution=node ./src/f_webhook.js",
-    "dev:wh": "node --experimental-specifier-resolution=node -r dotenv/config ./src/f_webhook.js",
+    "dev:wh": "nodemon --experimental-specifier-resolution=node -r dotenv/config ./src/f_webhook.js",
     "start:lp": "node --experimental-specifier-resolution=node ./src/f_longpoll.js",
-    "dev:lp": "node --experimental-specifier-resolution=node -r dotenv/config ./src/f_longpoll.js"
+    "dev:lp": "nodemon --experimental-specifier-resolution=node -r dotenv/config ./src/f_longpoll.js"
   },
   "dependencies": {
     "@meetmonday/tsww": "meetmonday/tsww",
@@ -19,6 +19,7 @@
     "cheerio": "^1.0.0-rc.6",
     "dotenv": "^10.0.0",
     "nayan-media-downloader": "^2.0.9",
+    "openai": "^4.47.1",
     "striptags": "^3.2.0"
   },
   "devDependencies": {
