@@ -51,7 +51,6 @@ function searchWOBooru(tags, ctx) {
 const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
   ctx.sendChatAction('upload_photo', ()=>{})
   Booru.search(site, tags, { limit: 4, random: true }).then((res) => {
-    console.log(res)
     if(!res.posts.length) { ctx.sendMessage('Ничего не найдено'); return false; }
     
     const photos = res.posts.map((e) => {
