@@ -48,11 +48,11 @@ function searchWOBooru(tags, ctx) {
     });
 }
 
-const searchCommand = (tags, ctx, site = 'gb') => {
-  console.log(`tags: ${tags}, site: ${site}`);
+const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
   ctx.sendChatAction('upload_photo', ()=>{})
   Booru.search(site, tags, { limit: 4, random: true }).then((res) => {
-    if(res.posts == []) { sendMessage('Ничего не найдено', msg); return false; }
+    console.log(res)
+    if(!res.posts.length) { ctx.sendMessage('Ничего не найдено'); return false; }
     
     const photos = res.posts.map((e) => {
       return {
@@ -65,7 +65,8 @@ const searchCommand = (tags, ctx, site = 'gb') => {
     })
 
     ctx.sendMediaGroup(photos).catch(()=> {
-      setTimeout(()=>{searchCommand(tags, ctx, site)}, 3000)
+      if(t<5) setTimeout(()=>{searchCommand(tags, ctx, site, t+1)}, 3000)
+        else ctx.sendMessage('Ну хуй знвет, паша хуй соси')
     });
   })
 }
