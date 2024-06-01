@@ -38,13 +38,18 @@ const prompt = `
 `
 
 function main(msg) {
-    openai.chat.completions.create({
-        messages: [{content: prompt+getTimeDiffToNextMidnight(), role: "user"}],
-        model: "gpt-3.5-turbo",
-      }).then((e)=> {
-        msg.sendMessage(e.choices[0].message.content);
-      }
-    );
+    if (process.env.OPENAI_API_KEY) {
+        openai.chat.completions.create({
+            messages: [{ content: prompt + getTimeDiffToNextMidnight(), role: "user" }],
+            model: "gpt-3.5-turbo",
+        }).then((e) => {
+            msg.sendMessage(e.choices[0].message.content);
+        }
+        );
+    }
+    else {
+        msg.sendMessage(getTimeDiffToNextMidnight())
+    }
 }
 
 export default main;
