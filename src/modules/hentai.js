@@ -9,10 +9,16 @@ const config = process.env.HENTAI_PROXY ? {
   },
 } : {};
 
+const extractSite = (input) => {
+  const match = input.match(/@\w+/);
+    const word = match ? match[0].slice(1) : 'gb';
+    const updatedString = input.replace(/@\w+/, '').trim();
+  return { site: word, tags: updatedString };
+};
+
 const random = (ctx) => {
   const randomId = rand(0, 5013920);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
-  console.log(link('test', 'https://google.com/'))
   ctx.sendMessage(link('Пикча', randomImageUrl), { parse_mode: 'Markdown' });
 };
 
@@ -43,6 +49,7 @@ function searchWOBooru(tags, ctx) {
 }
 
 const searchCommand = (tags, ctx, site = 'gb') => {
+  console.log(`tags: ${tags}, site: ${site}`);
   ctx.sendChatAction('upload_photo', ()=>{})
   Booru.search(site, tags, { limit: 4, random: true }).then((res) => {
     if(res.posts == []) { sendMessage('Ничего не найдено', msg); return false; }
@@ -52,13 +59,13 @@ const searchCommand = (tags, ctx, site = 'gb') => {
         type: 'photo',
         media: e.file_url,
         has_spoiler: e.rating == 'e' ? true : false,
-        caption: `score: ${e.score} / id: ${link(e.id, 'https://gelbooru.com/index.php?page=post&s=view&id=' + e.id)}`,
+        caption: `score: ${e.score} / id: ${link(e.id, e.booru.domain+e.booru.site.api.postView+e.id)}`,
         parse_mode: 'Markdown'
       }
     })
 
     ctx.sendMediaGroup(photos).catch(()=> {
-      setTimeout(()=>{searchCommand(ctx.payload, ctx)}, 3000)
+      setTimeout(()=>{searchCommand(tags, ctx, site)}, 3000)
     });
   })
 }
@@ -66,9 +73,9 @@ const searchCommand = (tags, ctx, site = 'gb') => {
 
 
 const hentaiRouter = (ctx) => {
-  console.log(ctx)
   if (ctx.payload) {
-    searchCommand(ctx.payload, ctx);
+    const args = extractSite(ctx.payload)
+    searchCommand(args.tags, ctx, args.site);
   } else {
     random(ctx);
   }
