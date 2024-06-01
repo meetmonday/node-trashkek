@@ -2,25 +2,25 @@
   "name": "node-trashkek",
   "version": "1.6.0",
   "engines": {
-    "node": "19.7.x",
-    "npm": "9.5"
+    "node": "20.x.x",
+    "npm": "10.x"
   },
-  "main": "index.js",
+  "main": "./src/bot.js",
   "type": "module",
   "scripts": {
-    "start:wh": "node --experimental-specifier-resolution=node ./src/f_webhook.js",
-    "dev:wh": "nodemon --experimental-specifier-resolution=node -r dotenv/config ./src/f_webhook.js",
-    "start:lp": "node --experimental-specifier-resolution=node ./src/f_longpoll.js",
-    "dev:lp": "nodemon --experimental-specifier-resolution=node -r dotenv/config ./src/f_longpoll.js"
+    "start": "node ./src/bot.js",
+    "dev": "nodemon -q -r dotenv/config ./src/bot.js"
   },
   "dependencies": {
     "@meetmonday/tsww": "meetmonday/tsww",
     "axios": "^0.24.0",
+    "booru": "^2.6.5",
     "cheerio": "^1.0.0-rc.6",
     "dotenv": "^10.0.0",
     "nayan-media-downloader": "^2.0.9",
     "openai": "^4.47.1",
-    "striptags": "^3.2.0"
+    "striptags": "^3.2.0",
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
     "eslint": "^8.18.0",

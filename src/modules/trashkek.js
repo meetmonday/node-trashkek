@@ -2,7 +2,6 @@
 import axios from 'axios';
 import striptags from 'striptags';
 
-import { sendMessage, deleteMessage } from '#lib/tgApi';
 import { bold, link } from '#lib/helpers';
 
 async function parseUrl(url) {
@@ -82,17 +81,17 @@ function cook(data) {
 }
 
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `, ${d.votes}` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
+  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `(${d.votes})` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
 }
 
-const main = async (msg) => {
-  const linkData = await parseUrl(msg.text);
+const main = async (ctx) => {
+  const linkData = await parseUrl(ctx.update.message.text);
   const comments = await grabComments(linkData.topic_id);
   const comment = grabCommentById(comments, linkData.comment_id);
   const midresult = buildResult(comment, linkData);
   const result = replaceImgWithLink(midresult);
-  sendMessage(result.html, msg, { disablePreview: !result.images, htmlParseMode: true });
-  deleteMessage(msg);
+  ctx.sendMessage(result.html, { link_preview_options: { is_disabled: !result.images }, parse_mode: 'html' });
+  ctx.deleteMessage();
 };
 
 export default main;
