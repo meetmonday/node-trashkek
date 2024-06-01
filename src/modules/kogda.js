@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-const openai = new OpenAI();
 
 function getWordForm(number, forms) {
     if (number % 10 == 1 && number % 100 != 11) {
@@ -39,6 +38,7 @@ const prompt = `
 
 function main(msg) {
     if (process.env.OPENAI_API_KEY) {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         openai.chat.completions.create({
             messages: [{ content: prompt + getTimeDiffToNextMidnight(), role: "user" }],
             model: "gpt-3.5-turbo",
