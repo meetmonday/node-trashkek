@@ -7,4 +7,4 @@ RUN npm ci
 
 COPY . .
 
-CMD ["npm", "run", "start:lp"]
+CMD ["npm", "run", "start"]
