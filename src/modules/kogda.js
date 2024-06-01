@@ -1,5 +1,3 @@
-import { sendMessage } from '#lib/tgApi';
-
 function getWordForm(number, forms) {
     if (number % 10 == 1 && number % 100 != 11) {
         return forms[0];
@@ -29,7 +27,7 @@ function getTimeDiffToNextMidnight() {
 
 
 function main(msg) {
-  sendMessage(getTimeDiffToNextMidnight(), msg);
+  msg.sendMessage(getTimeDiffToNextMidnight());
 }
 
 export default main;
