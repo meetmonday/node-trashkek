@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Booru, { search, BooruError, sites } from 'booru'
 import { rand, link } from '#lib/helpers';
+import hentaiSuggestions from '#modules/hentaiSuggest';
 
 const config = process.env.HENTAI_PROXY ? {
   proxy: {
@@ -50,7 +51,7 @@ function searchWOBooru(tags, ctx) {
 
 const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
   ctx.sendChatAction('upload_photo', ()=>{})
-  Booru.search(site, tags, { limit: 4, random: true }).then((res) => {
+  Booru.search(site, tags, { limit: 3, random: true }).then((res) => {
     if(!res.posts.length) { ctx.sendMessage('Ничего не найдено'); return false; }
     
     const photos = res.posts.map((e) => {
@@ -63,10 +64,13 @@ const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
       }
     })
 
-    ctx.sendMediaGroup(photos).catch(()=> {
-      if(t<5) setTimeout(()=>{searchCommand(tags, ctx, site, t+1)}, 3000)
+    ctx.sendMediaGroup(photos).then(()=>{
+      hentaiSuggestions(ctx, res.posts.map((e)=>e.tags))
+    }).catch(()=> {
+      if(t<4) setTimeout(()=>{searchCommand(tags, ctx, site, t+1)}, 3000)
         else ctx.sendMessage('Ну хуй знвет, паша хуй соси')
     });
+
   })
 }
 
