@@ -12,8 +12,15 @@ bot.hears(/#div_comment_/, trashkek)
 bot.hears('когда', naganWhen)
 bot.command('hentai', hentai)
 
+bot.action(/henSug-/, (ctx) => {
+    const list = ctx.update.callback_query.message.text.split('\n').splice(1)
+    const ind = ctx.match.input.split('-')[1]
+
+    hentai(ctx, true, list[ind].split('.')[1].trim());
+})
+
 bot.launch()
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+// process.once('SIGINT', () => bot.stop('SIGINT'))
+// process.once('SIGTERM', () => bot.stop('SIGTERM'))

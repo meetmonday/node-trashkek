@@ -1,32 +1,41 @@
 import OpenAI from "openai";
 import { Markup } from "telegraf";
+import { button } from "telegraf/markup";
 
 const prompt = `
-После этог сообщения ты - система рекомендаций, который рекомендует теги для поиска изображений
-Твоя задача - Составить 3 списка тегов, которые могут заинтересовать пользователя
-В КАЖДОМ СПИСКЕ НЕ БОЛЬШЕ 3 ТЕГОВ!
-В своем ответе ты должен отправить ТОЛЬКО 3 качественных рекомендации по тегам
-ПЕРЕЧИСЛЯЙ ТЕГИ ЧЕРЕЗ ПРОБЕЛЫ, без запятых, между строками перенос
-ФОРМАТ ОТВЕТА: тег тег тег\nтег тег тег...
-НЕ ПОВТОРЯЙСЯ. НИКОГДА НЕ ИСПОЛЬЗУЙ highres, absurdres, lowres и тому подобные
-НЕ ИСКАЖАЙ СОДЕРЖАНИЕ ТЕГОВ, не убирай _ между ними
-НЕ ИСПОЛЬЗУЙ ВЗАИМОИСКЛЮЧАЮЩИЕ ТЕГИ, по твоим рекомендациям ОБЯЗАТЕЛЬНО должны найти новые изображения
+Ты - система рекомендаций, которая рекомендует теги для поиска изображений
+Твоя задача - Составить 3 строки с уже существующими тегами, которые обязательно заинтересуют пользователя
+Не нужно придумывать несуществующие теги
+Правила:
+1. НИ В КОЕМ СЛУЧАЕ НЕ ИСКАЖАТЬ ТЕГИ
+2. Не убирать _ между ними, разделять каждый тег пробелом
+3. Не нумеровать строки
+4. В каждой строке - не более 3 тегов, никак иначе
+
+При нарушении этих правил предусмотрена система штрафов в зависимости от серьезности нарушения.
+
 Вот список тегов:
 
 `
 
-const hentaiSuggestions = (ctx, tags) => {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    openai.chat.completions.create({
-        messages: [{ content: prompt + JSON.stringify(tags), role: "user" }],
-        model: "gpt-3.5-turbo",
-    }).then((e) => {
-        const req = e.choices[0].message.content.split('\n')
-        ctx.sendMessage(`Рекомендации по ${ctx.payload}`, Markup
-        .keyboard(req.map(e=>'/hentai '+e))
-        .oneTime()
-        .resize());
-    }).catch(()=>{});
+const hentaiSuggestions = (ctx, tags, requestTags = '') => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const joinedTags = Array.from(new Set(tags.flat()))
+  const jestFilter = joinedTags.filter(word => !joinedTags.some(otherWord => otherWord !== word && otherWord.includes(word))  );
+  
+  const message = { content: prompt + JSON.stringify(jestFilter), role: "system" }
+  openai.chat.completions.create({
+    messages: [message],
+    model: "gpt-3.5-turbo",
+  }).then((res) => {
+    const req = res.choices[0].message.content.split('\n').filter(item => item !== '').map((e, i) => { return `${i+1}. ${e}` })
+    const buttons = req.map((_,i) => button.callback(i+1, `henSug-${i}`))
+    ctx.sendMessage(`Рекомендации по ${requestTags}\n${req.join('\n')}`, Markup.inlineKeyboard([
+      buttons
+    ])
+  );
+
+  }).catch(() => { });
 }
 
 export default hentaiSuggestions;

@@ -65,9 +65,9 @@ const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
     })
 
     ctx.sendMediaGroup(photos).then(()=>{
-      hentaiSuggestions(ctx, res.posts.map((e)=>e.tags))
-    }).catch(()=> {
-      if(t<4) setTimeout(()=>{searchCommand(tags, ctx, site, t+1)}, 3000)
+      hentaiSuggestions(ctx, res.posts.map((e)=>e.tags), tags)
+    }).catch((err) => {
+      if(t<3) setTimeout(()=>{searchCommand(tags, ctx, site, t+1)}, 3000)
         else ctx.sendMessage('Ну хуй знвет, паша хуй соси')
     });
 
@@ -76,10 +76,13 @@ const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
 
 
 
-const hentaiRouter = (ctx) => {
+const hentaiRouter = (ctx, inline = false, tags = '') => {
   if (ctx.payload) {
     const args = extractSite(ctx.payload)
     searchCommand(args.tags, ctx, args.site);
+  } 
+  else if(inline) {
+    searchCommand(tags, ctx)
   } else {
     random(ctx);
   }
