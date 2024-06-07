@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Booru, { search, BooruError, sites } from 'booru'
+import Booru from 'booru'
 import { rand, link } from '#lib/helpers';
 import hentaiSuggestions from '#modules/hentaiSuggest';
 

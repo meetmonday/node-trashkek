@@ -16,7 +16,7 @@ bot.action(/henSug-/, (ctx) => {
     const list = ctx.update.callback_query.message.text.split('\n').splice(1)
     const ind = ctx.match.input.split('-')[1]
 
-    hentai(ctx, true, list[ind].split('.')[1].trim());
+    hentai(ctx, true, list[ind].split('.')[1].split(' = ')[0].trim());
 })
 
 bot.launch()

@@ -15,7 +15,7 @@ async function parseUrl(url) {
   const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
   topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   title = Array.from(data.matchAll(/<!\[CDATA\[(.*?)\]\]>/g))[1][1];
-  console.log(title);
+  // console.log(title);
   // }
 
   return {
