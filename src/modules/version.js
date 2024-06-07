@@ -45,7 +45,7 @@ async function generateChangelog(owner, repo, numEntries) {
 // Example usage
 const owner = 'meetmonday';
 const repo = 'node-trashkek';
-const numEntriesToShow = 5;
+const numEntriesToShow = 7;
 
 
 
