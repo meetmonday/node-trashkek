@@ -7,8 +7,8 @@ function getCurrentCommitHash() {
         const commitHash = execSync('git rev-parse HEAD').toString().trim();
         return commitHash;
     } catch (error) {
-        console.error('Error getting current commit hash:', error);
-        return null;
+        console.error('GIT NE SUCHESTVUET, MI CHTO V MUSORNoM KONTEYNERE?');
+        return process.env.GIT_HASH || null;
     }
 }
 
@@ -36,7 +36,7 @@ async function generateChangelog(owner, repo, numEntries) {
 
     const changelogEntries = commitEntries.map((commit, index) => {
         const commitMarker = commit.sha === currentCommitHash ? ' ◀' : '';
-        return `${index + 1}. ${commit.sha.slice(-5)}${commitMarker}: ${commit.commit.message}`;
+        return `${index + 1}. ${commit.sha.slice(0, 7)}${commitMarker}: ${commit.commit.message}`;
     });
 
     return changelogEntries;
