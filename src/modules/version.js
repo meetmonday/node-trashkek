@@ -51,7 +51,7 @@ const numEntriesToShow = 7;
 
   
 const getVersion = (ctx) => {
-  generateChangelog(owner, repo, numEntriesToShow)
+  generateChangelog(owner, repo, ctx.payload || numEntriesToShow)
     .then(changelog => {
       let text = []
         if (changelog) {
