@@ -1,2 +1,9 @@
+.git
+.github
+.env
+.eslintrc.cjs
+.gitignore
 node_modules
 npm-debug.log
+docker-compose.yaml
+Makefile
