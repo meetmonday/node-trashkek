@@ -4,7 +4,7 @@ import axios from 'axios';
 // Function to get the current commit hash of the project
 function getCurrentCommitHash() {
     try {
-        const commitHash = execSync('git rev-parse HEAD').toString().trim();
+        const commitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
         return commitHash;
     } catch (error) {
         console.debug('GIT NE SUCHESTVUET, MI CHTO V MUSORNoM KONTEYNERE?');
