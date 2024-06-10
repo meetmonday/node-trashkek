@@ -7,6 +7,7 @@ import naganWhen from '#modules/kogda';
 import getVersion from '#modules/version';
 
 const bot = new Telegraf(process.env.BOT_TOKEN)
+if(Bun.version) process.env.WEINBUN = true
 
 bot.hears(/tiktok.com/, tiktok)
 bot.hears(/#div_comment_/, trashkek)

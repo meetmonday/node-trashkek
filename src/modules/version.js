@@ -1,5 +1,4 @@
 import { execSync } from 'child_process';
-import axios from 'axios';
 
 // Function to get the current commit hash of the project
 function getCurrentCommitHash() {
@@ -12,16 +11,23 @@ function getCurrentCommitHash() {
     }
 }
 
-// Function to get commit history from a GitHub repository using Axios
+// Function to get commit history from a GitHub repository using Fetch API
 async function getCommitHistory(owner, repo) {
     try {
-        const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/commits`);
-        return response.data;
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits`);
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        } else {
+            console.error('Error fetching commit history:', response.status);
+            return null;
+        }
     } catch (error) {
         console.error('Error fetching commit history:', error);
         return null;
     }
 }
+
 
 // Function to generate changelog with multiple commit entries and highlight the current commit
 async function generateChangelog(owner, repo, numEntries) {
@@ -56,7 +62,7 @@ const getVersion = (ctx) => {
     .then(changelog => {
       let text = []
         if (changelog) {
-            text.push('ЧЛЕНДЖЛОГ:');
+            text.push(`ЧЛЕНДЖЛОГ: ${ process.env.WEINBUN ? 'В БУНЕ ' + Bun.version : '' }`);
             changelog.forEach(entry => text.push(entry));
         }
         ctx.sendMessage(text.join('\n'))
