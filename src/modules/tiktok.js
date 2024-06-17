@@ -20,14 +20,17 @@ function main(ctx) {
       .then(({ data }) => {
         console.log(data)
         if(data.status === 'picker') {
-          const photos = data.picker.slice(0,9).map((e) => {
+          const photos = data.picker.map((e) => {
             return {
               type: 'photo',
               media: e.url
             }
           })
 
-          ctx.sendMediaGroup(photos)
+          while (photos.length > 0) {
+            ctx.sendMediaGroup(photos.splice(0, 9))
+          }
+
           tl.downloadFile(data.audio).then(e=> {
             console.log(e)
             ctx.sendVoice({ source : fs.readFileSync(e) })
