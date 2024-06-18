@@ -25,6 +25,8 @@ function main(ctx) {
           if (photoUrls.length > 9) {
             createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
               ctx.sendVideo({ source: fs.readFileSync(e) });
+            }).catch((e) => {
+              ctx.reply(`Произошло хуй знает что, но ${e}`)
             });
           } else {
             const photos = photoUrls.map((e) => {
