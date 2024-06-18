@@ -1,6 +1,7 @@
 import axios from "axios";
-import tl from '#lib/temploader';
-import fs from 'fs'
+import tl from "#lib/temploader";
+import fs from "fs";
+import createSlideshow from "#lib/slideShower";
 
 function main(ctx) {
   ctx.persistentChatAction("upload_video", () => {
@@ -18,29 +19,32 @@ function main(ctx) {
         }
       )
       .then(({ data }) => {
-        console.log(data)
-        if(data.status === 'picker') {
-          const photos = data.picker.map((e) => {
-            return {
-              type: 'photo',
-              media: e.url
-            }
-          })
+        if (data.status === "picker") {
+          const photoUrls = data.picker.map((e) => e.url);
+          const audioUrl = data.audio;
+          if (photoUrls.length > 9) {
+            createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
+              ctx.sendVideo({ source: fs.readFileSync(e) });
+            });
+          } else {
+            const photos = photoUrls.map((e) => {
+              return {
+                type: "photo",
+                media: e,
+              };
+            });
+            ctx.sendMediaGroup(photos);
 
-          while (photos.length > 0) {
-            ctx.sendMediaGroup(photos.splice(0, 9))
+            tl.downloadFile(data.audio).then((e) => {
+              ctx.sendVoice({ source: fs.readFileSync(e) });
+              tl.deleteFile(e);
+            });
           }
-
-          tl.downloadFile(data.audio).then(e=> {
-            console.log(e)
-            ctx.sendVoice({ source : fs.readFileSync(e) })
-            tl.deleteFile(e)
-          })
         } else {
-          tl.downloadFile(data.url).then(e=> {
-            ctx.sendVideo({ source : fs.readFileSync(e) })
-            tl.deleteFile(e)
-          })
+          tl.downloadFile(data.url).then((e) => {
+            ctx.sendVideo({ source: fs.readFileSync(e) });
+            tl.deleteFile(e);
+          });
         }
       });
   });
