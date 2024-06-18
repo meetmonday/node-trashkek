@@ -18,11 +18,11 @@ const __dirname = path.resolve();
  */
 async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
   try {
-    // Создаем временную директорию для загрузки файлов
-    const tempDir = path.join(path.resolve(), 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir);
-    }
+    // Задаем путь к временной директории в корне проекта
+    const tempDir = path.join(path.resolve(), '.temp', 'vid');
+
+    // Создаем временную директорию и её родительские директории, если они не существуют
+    fs.mkdirSync(tempDir, { recursive: true });
 
     // Функция для загрузки файла по URL
     const downloadFile = async (url, filepath) => {
