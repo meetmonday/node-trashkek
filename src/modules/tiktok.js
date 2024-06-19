@@ -5,11 +5,20 @@ import createSlideshow from "#lib/slideShower";
 
 function main(ctx) {
   ctx.persistentChatAction("upload_video", () => {
+    let videoUrl = null;
+    let forceSlide = false
+
+    if(ctx.update.message.text.slice(-1) === '!') {
+      videoUrl = ctx.update.message.text.slice(0, -1)
+      forceSlide = true
+    } else { 
+      videoUrl = ctx.update.message.text
+    }
     axios
       .post(
         "https://api.cobalt.tools/api/json",
         {
-          url: ctx.update.message.text,
+          url: videoUrl,
         },
         {
           headers: {
@@ -22,11 +31,11 @@ function main(ctx) {
         if (data.status === "picker") {
           const photoUrls = data.picker.map((e) => e.url);
           const audioUrl = data.audio;
-          if (photoUrls.length > 9) {
+          if (photoUrls.length > 4 || forceSlide) {
             createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
               ctx.sendVideo({ source: fs.readFileSync(e) });
             }).catch((e) => {
-              ctx.reply(`Произошло хуй знает что, но ${e}`)
+              ctx.reply(e)
             });
           } else {
             const photos = photoUrls.map((e) => {
@@ -48,6 +57,10 @@ function main(ctx) {
             tl.deleteFile(e);
           });
         }
+      }).catch(e => {
+        ctx.reply(`ERR: ${e.response.data.text}`)
+      }).catch(e=> {
+        ctx.reply(e)
       });
   });
 }

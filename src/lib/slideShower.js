@@ -1,9 +1,9 @@
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffprobeInstaller from '@ffprobe-installer/ffprobe';
-import path from 'path';
-import fs from 'fs';
-import axios from 'axios';
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import ffprobeInstaller from "@ffprobe-installer/ffprobe";
+import path from "path";
+import fs from "fs";
+import axios from "axios";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 ffmpeg.setFfprobePath(ffprobeInstaller.path);
@@ -19,7 +19,7 @@ const __dirname = path.resolve();
 async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
   try {
     // Задаем путь к временной директории в корне проекта
-    const tempDir = path.join(path.resolve(), '.temp', 'vid');
+    const tempDir = path.join(path.resolve(), ".temp", "vid");
 
     // Создаем временную директорию и её родительские директории, если они не существуют
     fs.mkdirSync(tempDir, { recursive: true });
@@ -28,14 +28,14 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
     const downloadFile = async (url, filepath) => {
       const response = await axios({
         url,
-        method: 'GET',
-        responseType: 'stream'
+        method: "GET",
+        responseType: "stream",
       });
       const writer = fs.createWriteStream(filepath);
       response.data.pipe(writer);
       return new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+        writer.on("finish", resolve);
+        writer.on("error", reject);
       });
     };
 
@@ -49,7 +49,7 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
     }
 
     // Загрузка аудио
-    let audioPath = path.join(tempDir, 'background.mp3');
+    let audioPath = path.join(tempDir, "background.mp3");
     await downloadFile(audioUrl, audioPath);
 
     // Получаем длительность аудиофайла
@@ -66,24 +66,27 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
     const audioDuration = await getAudioDuration(audioPath);
 
     // Минимальная и максимальная длина каждого слайда в секундах
-    const minSlideDuration = 2; // минимальная длительность одного слайда
-    const maxSlideDuration = 6; // максимальная длительность одного слайда
+    const minSlideDuration = 3; // минимальная длительность одного слайда
+    const maxSlideDuration = 5; // максимальная длительность одного слайда
 
     // Рассчитываем длительность каждого слайда
     let slideDuration = audioDuration / imageUrls.length;
 
     if (slideDuration < minSlideDuration) {
       // Если длина слайда меньше минимальной, повторяем аудио
-      const repeatFactor = Math.ceil(minSlideDuration * imageUrls.length / audioDuration);
-      const repeatedAudioPath = path.join(tempDir, 'repeated_audio.mp3');
-      
+      const repeatFactor = Math.ceil(
+        (minSlideDuration * imageUrls.length) / audioDuration
+      );
+      const repeatedAudioPath = path.join(tempDir, "repeated_audio.mp3");
+
       await new Promise((resolve, reject) => {
         ffmpeg(audioPath)
           .outputOptions([
-            '-filter_complex', `aloop=loop=${repeatFactor}:size=1e+06` // Повторение аудио
+            "-filter_complex",
+            `aloop=loop=${repeatFactor}:size=1e+06`, // Повторение аудио
           ])
-          .on('end', resolve)
-          .on('error', reject)
+          .on("end", resolve)
+          .on("error", reject)
           .save(repeatedAudioPath);
       });
 
@@ -92,12 +95,11 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
 
       // Устанавливаем новую длительность слайда
       slideDuration = minSlideDuration;
-
     } else if (slideDuration > maxSlideDuration) {
       // Если длина слайда больше максимальной, уменьшаем число слайдов путем повтора
       slideDuration = maxSlideDuration;
       const totalVideoDuration = maxSlideDuration * imageUrls.length;
-      
+
       // Повторяем изображения для заполнения времени
       const repeatedImages = [];
       let currentDuration = 0;
@@ -105,11 +107,33 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
         repeatedImages.push(...imagePaths);
         currentDuration += maxSlideDuration * imagePaths.length;
       }
-      
+
       // Обновляем список изображений для создания видео
       imagePaths.length = 0;
-      imagePaths.push(...repeatedImages.slice(0, Math.ceil(totalVideoDuration / maxSlideDuration)));
+      imagePaths.push(
+        ...repeatedImages.slice(
+          0,
+          Math.ceil(totalVideoDuration / maxSlideDuration)
+        )
+      );
     }
+
+    // Получаем разрешение первого изображения
+    const getImageResolution = async (imagePath) => {
+      return new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(imagePath, (err, metadata) => {
+          if (err) return reject(err);
+          const { width, height } = metadata.streams[0];
+          resolve({ width, height });
+        });
+      });
+    };
+
+    let firstImageResolution = await getImageResolution(imagePaths[0]);
+
+    // Убедимся, что ширина и высота четные
+    if (firstImageResolution.width % 2 !== 0) firstImageResolution.width += 1;
+    if (firstImageResolution.height % 2 !== 0) firstImageResolution.height += 1;
 
     return new Promise((resolve, reject) => {
       // Настройка и запуск FFmpeg для создания слайдшоу
@@ -117,22 +141,28 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
         .addInput(`${tempDir}/%d.jpg`) // %d будет заменен на числа (1.jpg, 2.jpg и т.д.)
         .inputOptions([
           `-framerate ${1 / slideDuration}`, // Рассчитанный кадр в секунду для слайда
-          '-pattern_type sequence' // Использование последовательности файлов
+          "-pattern_type sequence", // Использование последовательности файлов
         ])
         .input(audioPath)
         .outputOptions([
-          '-c:v libx264', // Использование кодека x264
-          '-pix_fmt yuv420p', // Совместимость с большинством видеоплееров
-          '-g 30', // Установка интервала ключевых кадров (каждые 30 кадров)
-          '-movflags +faststart', // Для оптимизации при воспроизведении
-          '-shortest' // Обрезать видео до длины аудиофайла
+          "-c:v libx264", // Использование кодека x264
+          "-pix_fmt yuv420p", // Совместимость с большинством видеоплееров
+          `-vf scale=${firstImageResolution.width}:${firstImageResolution.height}`, // Установка разрешения на основе первого изображения
+          "-g 30", // Установка интервала ключевых кадров (каждые 30 кадров)
+          "-movflags +faststart", // Для оптимизации при воспроизведении
+          "-shortest", // Обрезать видео до длины аудиофайла
+          `-vsync vfr`, // Использование переменной синхронизации (важно для плавного воспроизведения)
+          `-r 30`, // Установка стабильной частоты кадров в 30 fps (помогает с совместимостью)
         ])
-        .on('end', () => {
+        .on("start", (commandLine) => {
+          console.log("FFmpeg command: ", commandLine);
+        })
+        .on("end", () => {
           // Удаление временных файлов
           fs.rmSync(tempDir, { recursive: true, force: true });
           resolve(outputFilePath);
         })
-        .on('error', (err) => {
+        .on("error", (err) => {
           // Удаление временных файлов в случае ошибки
           fs.rmSync(tempDir, { recursive: true, force: true });
           reject(`Произошла ошибка: ${err.message}`);
