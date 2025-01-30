@@ -8,6 +8,7 @@ function getCurrentCommitHash() {
         return commitHash;
     } catch (error) {
         console.debug('GIT NE SUCHESTVUET, MI CHTO V MUSORNoM KONTEYNERE?');
+        
         return process.env.GIT_HASH || null;
     }
 }
