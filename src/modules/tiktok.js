@@ -1,67 +1,30 @@
-import axios from "axios";
-import tl from "#lib/temploader";
-import fs from "fs";
-import createSlideshow from "#lib/slideShower";
+import dl from "#lib/ttdl";
+// import fs from "fs";
+// import createSlideshow from "#lib/slideShower";
 
 function main(ctx) {
-  ctx.persistentChatAction("upload_video", () => {
-    let videoUrl = null;
-    let forceSlide = false
+  const url = ctx.update.message.text;
+  dl(url).then((data) => {
+    if (data.images) {
+      const photoUrls = data.images.map((e) => e.url);
+      const audioUrl = data.music.play_url;
+      // createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
+      //   ctx.sendVideo({ source: fs.readFileSync(e) });      пока не работает
 
-    if(ctx.update.message.text.slice(-1) === '!') {
-      videoUrl = ctx.update.message.text.slice(0, -1)
-      forceSlide = true
-    } else { 
-      videoUrl = ctx.update.message.text
-    }
-    axios
-      .post(
-        "https://api.cobalt.tools/api/json",
-        {
-          url: videoUrl,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      .then(({ data }) => {
-        if (data.status === "picker") {
-          const photoUrls = data.picker.map((e) => e.url);
-          const audioUrl = data.audio;
-          if (photoUrls.length > 4 || forceSlide) {
-            createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
-              ctx.sendVideo({ source: fs.readFileSync(e) });
-            }).catch((e) => {
-              ctx.reply(e)
-            });
-          } else {
-            const photos = photoUrls.map((e) => {
-              return {
-                type: "photo",
-                media: e,
-              };
-            });
-            ctx.sendMediaGroup(photos);
 
-            tl.downloadFile(data.audio).then((e) => {
-              ctx.sendVoice({ source: fs.readFileSync(e) });
-              tl.deleteFile(e);
-            });
-          }
-        } else {
-          tl.downloadFile(data.url).then((e) => {
-            ctx.sendVideo({ source: fs.readFileSync(e) });
-            tl.deleteFile(e);
-          });
-        }
-      }).catch(e => {
-        ctx.reply(`ERR: ${e.response.data.text}`)
-      }).catch(e=> {
-        ctx.reply(e)
+      const photos = photoUrls.map((e) => {
+        return {
+          type: "photo",
+          media: e,
+        };
       });
+      ctx.sendMediaGroup(photos);
+
+      ctx.sendVoice(audioUrl);
+    } else {
+      const caption = `👨‍🦰${data.author.name}\n❤️${data.stats.likeCount} 👁${data.stats.playCount}\n${data.title == 'Downloaded from TiklyDown API' ? '' : data.title}`
+      ctx.sendVideo(data.video.noWatermark, { caption });
+    }
   });
 }
 

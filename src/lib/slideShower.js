@@ -151,7 +151,6 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
           "-g 30", // Установка интервала ключевых кадров (каждые 30 кадров)
           "-movflags +faststart", // Для оптимизации при воспроизведении
           "-shortest", // Обрезать видео до длины аудиофайла
-          `-vsync vfr`, // Использование переменной синхронизации (важно для плавного воспроизведения)
           `-r 30`, // Установка стабильной частоты кадров в 30 fps (помогает с совместимостью)
         ])
         .on("start", (commandLine) => {
@@ -164,7 +163,7 @@ async function createSlideshow(imageUrls, audioUrl, outputFilePath) {
         })
         .on("error", (err) => {
           // Удаление временных файлов в случае ошибки
-          fs.rmSync(tempDir, { recursive: true, force: true });
+          // fs.rmSync(tempDir, { recursive: true, force: true });
           reject(`Произошла ошибка: ${err.message}`);
         })
         .save(outputFilePath);

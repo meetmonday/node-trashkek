@@ -28,7 +28,19 @@ const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
         parse_mode: 'Markdown'
       }
     })
+
+
+    ctx.sendMediaGroup(photos).then(()=>{
+      hentaiSuggestions(ctx, res.posts.map((e)=>e.tags), tags)
+    }).catch((err) => {
+        ctx.sendMessage('Ну хуй знвет, паша хуй соси\n'+err)
+    });
+  }).catch((e) => {
+    console.log(e)
+    ctx.sendMessage('Ошибка получения данных')
   })
+
+  
 }
 
 const hentaiRouter = (ctx) => {
