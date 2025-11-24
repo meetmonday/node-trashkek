@@ -14,7 +14,7 @@ const random = (ctx) => {
   ctx.sendMessage(link('Пикча', randomImageUrl), { parse_mode: 'Markdown' });
 };
 
-const searchCommand = (tags, ctx, site = 'gb', t = 0) => {
+const searchCommand = (tags, ctx, site = 'sb', t = 0) => {
   ctx.sendChatAction('upload_photo', ()=>{})
   Booru.search(site, tags, { limit: 3, random: true }).then((res) => {
     if(!res.posts.length) { ctx.sendMessage('Ничего не найдено'); return false; }

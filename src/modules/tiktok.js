@@ -1,31 +1,48 @@
 import dl from "#lib/ttdl";
+import { sendAudioFromUrl } from "#lib/tomp3";
 // import fs from "fs";
 // import createSlideshow from "#lib/slideShower";
 
+const MAX_BYTES = 50 * 1024 * 1024;
+async function fetchToBuffer(url) {
+  const res = await fetch(url, { timeout: 7000 });
+  if (!res.ok) throw new Error(`Fetch ${url} failed: ${res.status}`);
+  const len = res.headers.get('content-length');
+  if (len && Number(len) > MAX_BYTES) throw new Error('File too large');
+  const buffer = await res.arrayBuffer();
+  return Buffer.from(buffer);
+}
+
 function main(ctx) {
   const url = ctx.update.message.text;
-  dl(url).then((data) => {
+  dl(url).then(async ({data}) => {
+    const caption = `👨‍🦰${data.author.nickname}\n❤️${data.digg_count} 👁${data.play_count}\n${data.title}`
     if (data.images) {
-      const photoUrls = data.images.map((e) => e.url);
-      const audioUrl = data.music.play_url;
-      // createSlideshow(photoUrls, audioUrl, ".temp/vid.mp4").then((e) => {
-      //   ctx.sendVideo({ source: fs.readFileSync(e) });      пока не работает
+      const audioUrl = data.play;
 
+      const buffers = await Promise.all(
+        data.images.map(async (url) => {
+          const buf = await fetchToBuffer(url);
+          return { buffer: buf, url };
+        })
+      );
 
-      const photos = photoUrls.map((e) => {
-        return {
-          type: "photo",
-          media: e,
-        };
+      const mediaGroup = buffers.map((b, idx) => ({
+        type: 'photo',
+        media: { source: b.buffer },
+        caption: idx === 0 && caption ? caption : undefined,
+      }));
+
+      await ctx.replyWithChatAction('upload_photo');
+      await ctx.sendMediaGroup(mediaGroup);
+
+      sendAudioFromUrl(ctx, audioUrl, 'audio.mp3', {
+        performer: data.music_info.author, title: data.music_info.title
       });
-      ctx.sendMediaGroup(photos);
-
-      ctx.sendVoice(audioUrl);
     } else {
-      const caption = `👨‍🦰${data.author.name}\n❤️${data.stats.likeCount} 👁${data.stats.playCount}\n${data.title == 'Downloaded from TiklyDown API' ? '' : data.title}`
-      ctx.sendVideo(data.video.noWatermark, { caption });
+      ctx.sendVideo(data.play, { caption });
     }
-  });
+  }).catch(e => console.log(e));
 }
 
 export default main;

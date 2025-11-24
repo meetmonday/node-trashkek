@@ -2,7 +2,7 @@ import axios from "axios"
 
 function dl(url) {
   return new Promise((resolve, reject) => {
-    axios.get(`https://api.tiklydown.eu.org/api/download?url=${url}`)
+    axios.post(`https://www.tikwm.com/api/`, { url, hd: 1 })
       .then(({ data }) => {
         resolve(data)
       })

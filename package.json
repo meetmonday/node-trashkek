@@ -15,7 +15,7 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "axios": "^1.7.9",
-    "booru": "^2.6.5",
+    "booru": "^2.8.1",
     "cheerio": "^1.0.0-rc.6",
     "dotenv": "^10.0.0",
     "fluent-ffmpeg": "^2.1.3",
