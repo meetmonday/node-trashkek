@@ -21,7 +21,6 @@ bot.command('ver', getVersion)
 
 const lines = fs.readFileSync('dgdata.txt', 'utf8').split("<br>").filter(Boolean);
 bot.on('inline_query', (ctx) => {
-  console.log(ctx)
   const zalupdaId = rand(0, lines.length - 1);
   ctx.answerInlineQuery([
     {
