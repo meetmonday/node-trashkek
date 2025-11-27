@@ -22,7 +22,7 @@ async function parseUrl(url) {
   const commentId = u.hash.split('_')[2];
 
   // if (path[1] === 'link') {
-  const { data } = await axios.get(`https://trashbox.ru/api_topics/${topicId}`);
+  const { data } = await axios.get(`https://${u.host}/api_topics/${topicId}`);
   topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   title = Array.from(data.matchAll(/<!\[CDATA\[(.*?)\]\]>/g))[1][1];
   // console.log(title);
@@ -33,6 +33,7 @@ async function parseUrl(url) {
     comment_id: commentId,
     full: url,
     title,
+    host: u.host
   };
 }
 
@@ -42,8 +43,8 @@ async function parseUrl(url) {
  * @param {number} topicId - The ID of the topic to fetch comments for.
  * @returns {Promise<Array>} A promise that resolves to an array of comments.
  */
-async function grabComments(topicId) {
-  const e = await axios.get(`https://trashbox.ru/api_noauth.php?action=comments&topic_id=${topicId}`);
+async function grabComments(topicId, host) {
+  const e = await axios.get(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
   return e.data.comments;
 }
 
@@ -99,13 +100,13 @@ function t2e(text) {
  * @param {string} htmlString - The HTML string containing <img> tags to be replaced.
  * @returns {{html: string, images: boolean}} An object containing the modified HTML string and a boolean indicating if any images were found.
  */
-function replaceImgWithLink(htmlString) {
+function replaceImgWithLink(htmlString, host) {
   let images = false;
   const newHtmlString = htmlString.replace(/<img([^>]*)>/gi, (match, p1) => {
     const srcMatch = p1.match(/src=(["'])(.*?)\1/);
     const src = srcMatch ? srcMatch[2] : '';
     images = true;
-    return `<a href="https://trashbox.ru${src}">🖼 Пикча</a>`;
+    return `<a href="https://${host}${src}">🖼 Пикча</a>`;
   });
   return { html: newHtmlString, images };
 }
@@ -156,10 +157,10 @@ function buildResult(d, ld) {
  */
 const main = async (ctx) => {
   const linkData = await parseUrl(ctx.update.message.text);
-  const comments = await grabComments(linkData.topic_id);
+  const comments = await grabComments(linkData.topic_id, linkData.host);
   const comment = grabCommentById(comments, linkData.comment_id);
   const midresult = buildResult(comment, linkData);
-  const result = replaceImgWithLink(midresult);
+  const result = replaceImgWithLink(midresult, linkData.host);
   ctx.sendMessage(result.html, { link_preview_options: { is_disabled: !result.images }, parse_mode: 'html' });
   ctx.deleteMessage();
 };
