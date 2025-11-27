@@ -5,6 +5,7 @@ import hentai from '#modules/hentai';
 import trashkek from '#modules/trashkek';
 import naganWhen from '#modules/kogda';
 import getVersion from '#modules/version';
+import {hsites} from '#modules/static';
 
 import { rand } from '#lib/helpers';
 import fs from 'fs';
@@ -18,6 +19,7 @@ bot.hears(/#div_comment_/, trashkek)
 bot.hears('когда', naganWhen)
 bot.command('hentai', hentai)
 bot.command('ver', getVersion)
+bot.command('hentaiSites', hsites)
 
 const lines = fs.readFileSync('dgdata.txt', 'utf8').split("<br>").filter(Boolean);
 bot.on('inline_query', (ctx) => {
