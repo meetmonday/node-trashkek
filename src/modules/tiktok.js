@@ -40,7 +40,7 @@ function main(ctx) {
         performer: data.music_info.author, title: data.music_info.title
       });
     } else {
-      ctx.sendVideo(data.play, { caption });
+      ctx.sendVideo({ source: await fetchToBuffer(data.play) }, { caption });
     }
   }).catch(e => console.log(e));
 }
