@@ -3,6 +3,9 @@ import { sendAudioFromUrl } from '#lib/tomp3.js';
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
+// Reusable AbortController for fetch timeouts
+const FETCH_TIMEOUT_MS = 7000;
+
 /**
  * Fetches data from a URL with size limit check.
  * @param {string} url - The URL to fetch.
@@ -10,12 +13,22 @@ const MAX_BYTES = 50 * 1024 * 1024;
  * @throws {Error} If fetch fails or file is too large.
  */
 async function fetchToBuffer(url) {
-  const res = await fetch(url, { timeout: 7000 });
-  if (!res.ok) throw new Error(`Fetch ${url} failed: ${res.status}`);
-  const len = res.headers.get('content-length');
-  if (len && Number(len) > MAX_BYTES) throw new Error('File too large');
-  const buffer = await res.arrayBuffer();
-  return Buffer.from(buffer);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!res.ok) throw new Error(`Fetch ${url} failed: ${res.status}`);
+    const len = res.headers.get('content-length');
+    if (len && Number(len) > MAX_BYTES) throw new Error('File too large');
+    const buffer = await res.arrayBuffer();
+    return Buffer.from(buffer);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
 }
 
 /**

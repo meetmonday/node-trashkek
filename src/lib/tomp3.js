@@ -12,53 +12,64 @@ import { PassThrough } from 'stream';
  */
 export async function toMp3Stream(url, options = {}) {
   const bitrate = options.bitrate || '192k';
+  const timeoutMs = options.timeoutMs || 15000;
 
-  const response = await fetch(url, { timeout: options.timeoutMs });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-  }
-  if (!response.body) {
-    throw new Error('No body in response stream');
-  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const ffmpeg = spawn('ffmpeg', [
-    '-hide_banner',
-    '-loglevel', 'error',
-    '-i', 'pipe:0',
-    '-vn',
-    '-c:a', 'libmp3lame',
-    '-b:a', bitrate,
-    '-f', 'mp3',
-    'pipe:1',
-  ], { stdio: ['pipe', 'pipe', 'pipe'] });
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
 
-  // Suppress or log stderr as needed
-  ffmpeg.stderr.on('data', () => {});
-
-  const outputStream = new PassThrough();
-
-  // Pipe input through ffmpeg
-  pipeline(response.body, ffmpeg.stdin).catch((err) => {
-    outputStream.destroy(err);
-    try { ffmpeg.kill(); } catch (e) { /* ignore */ }
-  });
-
-  // Pipe ffmpeg output to our stream
-  pipeline(ffmpeg.stdout, outputStream).catch((err) => {
-    outputStream.destroy(err);
-    try { ffmpeg.kill(); } catch (e) { /* ignore */ }
-  });
-
-  // Handle ffmpeg process exit
-  ffmpeg.on('close', (code, signal) => {
-    if (code !== 0) {
-      outputStream.destroy(new Error(`ffmpeg exited with code ${code}, signal ${signal}`));
-    } else {
-      outputStream.end();
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }
-  });
+    if (!response.body) {
+      throw new Error('No body in response stream');
+    }
 
-  return outputStream;
+    const ffmpeg = spawn('ffmpeg', [
+      '-hide_banner',
+      '-loglevel', 'error',
+      '-i', 'pipe:0',
+      '-vn',
+      '-c:a', 'libmp3lame',
+      '-b:a', bitrate,
+      '-f', 'mp3',
+      'pipe:1',
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    // Suppress or log stderr as needed
+    ffmpeg.stderr.on('data', () => {});
+
+    const outputStream = new PassThrough();
+
+    // Pipe input through ffmpeg
+    pipeline(response.body, ffmpeg.stdin).catch((err) => {
+      outputStream.destroy(err);
+      try { ffmpeg.kill(); } catch (e) { /* ignore */ }
+    });
+
+    // Pipe ffmpeg output to our stream
+    pipeline(ffmpeg.stdout, outputStream).catch((err) => {
+      outputStream.destroy(err);
+      try { ffmpeg.kill(); } catch (e) { /* ignore */ }
+    });
+
+    // Handle ffmpeg process exit
+    ffmpeg.on('close', (code, signal) => {
+      if (code !== 0) {
+        outputStream.destroy(new Error(`ffmpeg exited with code ${code}, signal ${signal}`));
+      } else {
+        outputStream.end();
+      }
+    });
+
+    return outputStream;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
 }
 
 /**
