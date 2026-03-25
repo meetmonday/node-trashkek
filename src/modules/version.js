@@ -5,6 +5,15 @@ const GITHUB_OWNER = 'meetmonday';
 const GITHUB_REPO = 'node-trashkek';
 const DEFAULT_CHANGELOG_ENTRIES = 7;
 
+// Create a reusable axios instance with optimized defaults
+const apiClient = axios.create({
+  baseURL: 'https://api.github.com',
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'node-trashkek-bot',
+  },
+});
+
 /**
  * Gets the current git commit hash.
  * @returns {string|null} Short commit hash or null if not available.
@@ -26,7 +35,7 @@ function getCurrentCommitHash() {
  */
 async function getCommitHistory(owner, repo) {
   try {
-    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/commits`);
+    const response = await apiClient.get(`/repos/${owner}/${repo}/commits`);
     return response.data;
   } catch (error) {
     console.error('Error fetching commit history:', error.message);

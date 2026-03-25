@@ -3,6 +3,11 @@ import striptags from 'striptags';
 
 import { bold, link } from '#lib/helpers.js';
 
+// Create a reusable axios instance with optimized defaults
+const apiClient = axios.create({
+  timeout: 10000,
+});
+
 /**
  * Parses a URL and extracts topic ID, comment ID, and title.
  * @param {string} url - The URL to parse.
@@ -16,7 +21,7 @@ async function parseUrl(url) {
   topicId = path[2];
   const [, commentId] = u.hash.split('_');
 
-  const { data } = await axios.get(`https://${u.host}/api_topics/${topicId}`);
+  const { data } = await apiClient.get(`https://${u.host}/api_topics/${topicId}`);
   topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   title = Array.from(data.matchAll(/<!\[CDATA\[(.*?)\]\]>/g))[1][1];
 
@@ -36,7 +41,7 @@ async function parseUrl(url) {
  * @returns {Promise<Array>} Array of comments.
  */
 async function grabComments(topicId, host) {
-  const response = await axios.get(
+  const response = await apiClient.get(
     `https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`,
   );
   return response.data.comments;
@@ -133,17 +138,21 @@ function buildResult(comment, linkData) {
  * @param {Object} ctx - Telegraf context object.
  */
 const main = async (ctx) => {
-  const linkData = await parseUrl(ctx.update.message.text);
-  const comments = await grabComments(linkData.topic_id, linkData.host);
-  const comment = grabCommentById(comments, linkData.comment_id);
-  const formattedMessage = buildResult(comment, linkData);
-  const result = replaceImgWithLink(formattedMessage, linkData.host);
+  try {
+    const linkData = await parseUrl(ctx.update.message.text);
+    const comments = await grabComments(linkData.topic_id, linkData.host);
+    const comment = grabCommentById(comments, linkData.comment_id);
+    const formattedMessage = buildResult(comment, linkData);
+    const result = replaceImgWithLink(formattedMessage, linkData.host);
 
-  await ctx.sendMessage(result.html, {
-    link_preview_options: { is_disabled: !result.images },
-    parse_mode: 'html',
-  });
-  await ctx.deleteMessage();
+    await ctx.sendMessage(result.html, {
+      link_preview_options: { is_disabled: !result.images },
+      parse_mode: 'html',
+    });
+    await ctx.deleteMessage();
+  } catch (error) {
+    console.error('Trashkek handler error:', error);
+  }
 };
 
 export default main;

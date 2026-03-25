@@ -1,14 +1,27 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import { rand } from '#lib/helpers.js';
 
-// Load data file at module initialization
-const lines = fs.readFileSync('dgdata.txt', 'utf8').split('<br>').filter(Boolean);
+// Cache for lines data - loaded once on first access
+let linesCache = null;
+
+/**
+ * Loads lines from dgdata.txt file with caching.
+ * @returns {Promise<string[]>} Array of lines from the file.
+ */
+async function loadLines() {
+  if (!linesCache) {
+    const content = await fs.readFile('dgdata.txt', 'utf8');
+    linesCache = content.split('<br>').filter(Boolean);
+  }
+  return linesCache;
+}
 
 /**
  * Handler for inline queries - returns a random line from dgdata.txt.
  * @param {Object} ctx - Telegraf context object.
  */
-const main = (ctx) => {
+const main = async (ctx) => {
+  const lines = await loadLines();
   const randomId = rand(0, lines.length - 1);
 
   ctx.answerInlineQuery([{
