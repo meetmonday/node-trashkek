@@ -1,45 +1,5 @@
-```
-# Dependencies
-node_modules/
-
-# Build artifacts
-dist/
-build/
-*.min.js
-*.bundle.js
-
-# Environment
+node_modules
+.test.js
 .env
-.env.local
-.env.*
-
-# Logs
-*.log
-
-# Editor/IDE
-.vscode/
-.idea/
-*.swp
-*.tmp
-
-# Python (if any Python files detected in project)
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-venv/
-.venv/
-.env
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Temporary files
-*.tmp
-*.temp
-.DS_Store
-Thumbs.db
-```
+pdb
+.temp

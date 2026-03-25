@@ -1,26 +1,23 @@
 import fs from 'fs';
-import { rand } from '#lib/helpers.js';
+import { rand } from '#lib/helpers';
 
-// Load data file at module initialization
-const lines = fs.readFileSync('dgdata.txt', 'utf8').split('<br>').filter(Boolean);
+const lines = fs.readFileSync('dgdata.txt', 'utf8').split("<br>").filter(Boolean);
 
-/**
- * Handler for inline queries - returns a random line from dgdata.txt.
- * @param {Object} ctx - Telegraf context object.
- */
 const main = (ctx) => {
-  const randomId = rand(0, lines.length - 1);
-
-  ctx.answerInlineQuery([{
-    type: 'article',
-    id: randomId,
-    title: `Выебать мамку - ${randomId}`,
-    input_message_content: {
-      message_text: lines[randomId],
-    },
-  }], {
-    cache_time: 1,
-  });
-};
+  const zalupdaId = rand(0, lines.length - 1);
+  ctx.answerInlineQuery([
+    {
+      type: 'article',
+      id: zalupdaId,
+      title: 'Выебать мамку - ' + zalupdaId,
+      input_message_content: {
+        message_text: lines[zalupdaId],
+      }
+    }
+  ], 
+  {
+    cache_time: 1
+  })
+}
 
 export default main;
