@@ -1,4 +1,8 @@
-export const hsites = (ctx) => {
+/**
+ * Handler for hentaiSites command - returns list of supported booru sites.
+ * @param {Object} ctx - Telegraf context object.
+ */
+const hsites = (ctx) => {
   ctx.reply(`
 e621.net: e6, e621
 e926.net: e9, e926
@@ -9,4 +13,6 @@ konachan.net: kn, konan, knet
 yande.re: yd, yand, yandere
 safebooru.org: sb, safe, safebooru
 derpibooru.org: dp, derp, derpi, derpibooru`);
-}
+};
+
+export default hsites;

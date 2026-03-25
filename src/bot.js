@@ -1,27 +1,30 @@
 import { Telegraf } from 'telegraf';
 
-import tiktok from '#modules/tiktok';
-import hentai from '#modules/hentai';
-import trashkek from '#modules/trashkek';
-import naganWhen from '#modules/kogda';
-import getVersion from '#modules/version';
-import dotagosu from '#modules/dotagosu';
-import {hsites} from '#modules/static';
+import tiktok from '#modules/tiktok.js';
+import hentai from '#modules/hentai.js';
+import trashkek from '#modules/trashkek.js';
+import naganWhen from '#modules/kogda.js';
+import getVersion from '#modules/version.js';
+import dotagosu from '#modules/dotagosu.js';
+import hsites from '#modules/static.js';
 
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-bot.hears(/tiktok.com/, tiktok)
-bot.hears(/#div_comment_/, trashkek)
-bot.hears('когда', naganWhen)
-bot.command('hentai', hentai)
-bot.command('hentaiSites', hsites)
-bot.command('ver', getVersion)
+// Register message handlers
+bot.hears(/tiktok\.com/, tiktok);
+bot.hears(/#div_comment_/, trashkek);
+bot.hears('когда', naganWhen);
 
-bot.on('inline_query', dotagosu)
+// Register command handlers
+bot.command('hentai', hentai);
+bot.command('hentaiSites', hsites);
+bot.command('ver', getVersion);
 
+// Register inline query handler
+bot.on('inline_query', dotagosu);
 
-bot.launch()
+bot.launch();
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
