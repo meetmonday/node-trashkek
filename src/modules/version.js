@@ -1,67 +1,83 @@
 import { execSync } from 'child_process';
 import axios from 'axios';
 
-// Function to get the current commit hash of the project
+const GITHUB_OWNER = 'meetmonday';
+const GITHUB_REPO = 'node-trashkek';
+const DEFAULT_CHANGELOG_ENTRIES = 7;
+
+/**
+ * Gets the current git commit hash.
+ * @returns {string|null} Short commit hash or null if not available.
+ */
 function getCurrentCommitHash() {
-    try {
-        const commitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
-        return commitHash;
-    } catch (error) {
-        console.debug('GIT NE SUCHESTVUET, MI CHTO V MUSORNoM KONTEYNERE?');
-        
-        return process.env.GIT_HASH || null;
-    }
+  try {
+    return execSync('git rev-parse --short=7 HEAD').toString().trim();
+  } catch (error) {
+    console.debug('GIT NOT AVAILABLE, USING ENVIRONMENT VARIABLE');
+    return process.env.GIT_HASH || null;
+  }
 }
 
-// Function to get commit history from a GitHub repository using Axios
+/**
+ * Fetches commit history from GitHub repository.
+ * @param {string} owner - Repository owner.
+ * @param {string} repo - Repository name.
+ * @returns {Promise<Array|null>} Array of commits or null on error.
+ */
 async function getCommitHistory(owner, repo) {
-    try {
-        const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/commits`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching commit history:', error);
-        return null;
-    }
+  try {
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/commits`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching commit history:', error.message);
+    return null;
+  }
 }
 
-// Function to generate changelog with multiple commit entries and highlight the current commit
+/**
+ * Generates a changelog from recent commits.
+ * @param {string} owner - Repository owner.
+ * @param {string} repo - Repository name.
+ * @param {number} numEntries - Number of entries to include.
+ * @returns {Promise<Array|null>} Array of changelog entries or null.
+ */
 async function generateChangelog(owner, repo, numEntries) {
-    const fullCommitHistory = await getCommitHistory(owner, repo);
-    if (!fullCommitHistory) {
-        console.error('Failed to retrieve commit history. Changelog generation aborted.');
-        return null;
+  const commitHistory = await getCommitHistory(owner, repo);
+  if (!commitHistory) {
+    console.error('Failed to retrieve commit history. Changelog generation aborted.');
+    return null;
+  }
+
+  const currentCommitHash = getCurrentCommitHash();
+  const recentCommits = commitHistory.slice(0, numEntries);
+
+  return recentCommits.map((commit, index) => {
+    const shortSha = commit.sha.slice(0, 7);
+    const marker = shortSha === currentCommitHash ? ' ◀' : '';
+    return `${index + 1}. ${shortSha}${marker}: ${commit.commit.message}`;
+  });
+}
+
+/**
+ * Handler for version command.
+ * @param {Object} ctx - Telegraf context object.
+ */
+const getVersion = async (ctx) => {
+  const numEntries = ctx.payload || DEFAULT_CHANGELOG_ENTRIES;
+
+  try {
+    const changelog = await generateChangelog(GITHUB_OWNER, GITHUB_REPO, numEntries);
+
+    const messages = ['ЧЛЕНДЖЛОГ:'];
+    if (changelog) {
+      messages.push(...changelog);
     }
 
-    const currentCommitHash = getCurrentCommitHash();
-    const commitEntries = fullCommitHistory.slice(0, numEntries);
-
-    const changelogEntries = commitEntries.map((commit, index) => {
-        const commitShortSha = commit.sha.slice(0, 7)
-        const commitMarker = commitShortSha === currentCommitHash ? ' ◀' : '';
-        return `${index + 1}. ${commitShortSha}${commitMarker}: ${commit.commit.message}`;
-    });
-
-    return changelogEntries;
-}
-
-// Example usage
-const owner = 'meetmonday';
-const repo = 'node-trashkek';
-const numEntriesToShow = 7;
-
-
-
-  
-const getVersion = (ctx) => {
-  generateChangelog(owner, repo, ctx.payload || numEntriesToShow)
-    .then(changelog => {
-      let text = []
-        if (changelog) {
-            text.push('ЧЛЕНДЖЛОГ:');
-            changelog.forEach(entry => text.push(entry));
-        }
-        ctx.sendMessage(text.join('\n'))
-    });
-}
+    await ctx.sendMessage(messages.join('\n'));
+  } catch (error) {
+    console.error('Version command error:', error);
+    await ctx.sendMessage('Failed to retrieve version information');
+  }
+};
 
 export default getVersion;
