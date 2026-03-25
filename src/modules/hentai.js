@@ -28,15 +28,21 @@ const random = (ctx) => {
  * @param {string} tags - Search tags.
  * @param {Object} ctx - Telegraf context object.
  * @param {string} site - Booru site identifier.
+ * @param {boolean} edit - Whether to edit existing message instead of sending new one.
+ * @param {string} callbackId - Callback ID for answering callback query.
  */
-const searchCommand = async (tags, ctx, site = 'danbooru') => {
+const searchCommand = async (tags, ctx, site = 'danbooru', edit = false, callbackId = null) => {
   await ctx.sendChatAction('upload_photo');
 
   try {
     const res = await Booru.search(site, tags, { limit: 4, random: true });
 
     if (!res.posts.length) {
-      await ctx.sendMessage('Ничего не найдено');
+      if (edit && callbackId) {
+        await ctx.answerCbQuery('Ничего не найдено');
+      } else {
+        await ctx.sendMessage('Ничего не найдено');
+      }
       return;
     }
 
@@ -50,14 +56,52 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
       parse_mode: 'Markdown',
     }));
 
+    const keyboard = {
+      inline_keyboard: [[{ text: '🔄 Обновить', callback_data: `hentai_refresh:${site}:${tags}` }]],
+    };
+
     try {
-      await ctx.sendMediaGroup(photos);
+      if (edit && ctx.update.callback_query.message) {
+        // Delete old message and send new one (can't edit media group directly)
+        await ctx.deleteMessage();
+        await ctx.sendMediaGroup(photos, { reply_markup: keyboard });
+      } else {
+        await ctx.sendMediaGroup(photos, { reply_markup: keyboard });
+      }
+      
+      if (callbackId) {
+        await ctx.answerCbQuery();
+      }
     } catch (err) {
-      await ctx.sendMessage(`Ошибка отправки: ${err.message}`);
+      if (callbackId) {
+        await ctx.answerCbQuery(`Ошибка отправки: ${err.message}`);
+      } else {
+        await ctx.sendMessage(`Ошибка отправки: ${err.message}`);
+      }
     }
   } catch (e) {
-    await ctx.reply(`Ошибка: ${e.message}`);
+    if (callbackId) {
+      await ctx.answerCbQuery(`Ошибка: ${e.message}`);
+    } else {
+      await ctx.reply(`Ошибка: ${e.message}`);
+    }
   }
+};
+
+/**
+ * Handles callback query for refreshing hentai images.
+ * @param {Object} ctx - Telegraf context object.
+ */
+const handleRefreshCallback = async (ctx) => {
+  const data = ctx.callbackQuery.data;
+  const parts = data.split(':');
+  
+  if (parts[0] !== 'hentai_refresh') return;
+  
+  const site = parts[1] || 'danbooru';
+  const tags = parts.slice(2).join(':') || '';
+  
+  await searchCommand(tags, ctx, site, true, ctx.callbackQuery.id);
 };
 
 /**
@@ -86,4 +130,4 @@ const hentaiRouter = (ctx) => {
   }
 };
 
-export default hentaiRouter;
+export { hentaiRouter as default, handleRefreshCallback };

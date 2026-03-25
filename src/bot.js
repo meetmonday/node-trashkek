@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 
 import tiktok from '#modules/tiktok.js';
-import hentai from '#modules/hentai.js';
+import hentai, { handleRefreshCallback } from '#modules/hentai.js';
 import trashkek from '#modules/trashkek.js';
 import naganWhen from '#modules/kogda.js';
 import getVersion from '#modules/version.js';
@@ -22,6 +22,9 @@ bot.command('ver', getVersion);
 
 // Register inline query handler
 bot.on('inline_query', dotagosu);
+
+// Register callback query handler for hentai refresh
+bot.on('callback_query', handleRefreshCallback);
 
 bot.launch();
 
