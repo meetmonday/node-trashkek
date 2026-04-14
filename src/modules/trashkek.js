@@ -15,12 +15,11 @@ import { bold, link } from '#lib/helpers.js';
  * @returns {string} return.title - The extracted title.
  */
 async function parseUrl(url) {
-  let title = '#';
+  let title = "Хуй знает, не существует(((";
   const u = new URL(url);
   const path = u.pathname.split('/');
   let topicId = path[2];
   const commentId = u.hash.split('_')[2];
-  let title = "Хуй знает, не существует(((";
 
   if (path[1] === 'link') {
   const { data } = await axios.get(`https://${u.host}/api_topics/${topicId}`);
