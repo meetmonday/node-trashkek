@@ -36,4 +36,5 @@ const main = async (ctx) => {
   });
 };
 
-export default main;
+export default (bot: BotType) =>
+    bot.inlineQuery(()=>true, (context) => main(context));

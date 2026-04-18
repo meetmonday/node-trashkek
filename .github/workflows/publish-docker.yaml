@@ -11,6 +11,7 @@ on:
       - 'Dockerfile'
       - 'package.json'
       - 'package-lock.json'
+      - 'bun.lock'
 
 env:
   REGISTRY: ghcr.io

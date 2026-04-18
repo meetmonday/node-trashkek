@@ -72,7 +72,7 @@ async function generateChangelog(owner, repo, numEntries) {
  * @param {Object} ctx - Telegraf context object.
  */
 const getVersion = async (ctx) => {
-  const numEntries = ctx.payload || DEFAULT_CHANGELOG_ENTRIES;
+  const numEntries = ctx.text.split(' ')[1] || DEFAULT_CHANGELOG_ENTRIES;
 
   try {
     const changelog = await generateChangelog(GITHUB_OWNER, GITHUB_REPO, numEntries);
@@ -82,11 +82,12 @@ const getVersion = async (ctx) => {
       messages.push(...changelog);
     }
 
-    await ctx.sendMessage(messages.join('\n'));
+    await ctx.send(messages.join('\n'));
   } catch (error) {
     console.error('Version command error:', error);
-    await ctx.sendMessage('Failed to retrieve version information');
+    await ctx.send('Failed to retrieve version information');
   }
 };
 
-export default getVersion;
+export default (bot: BotType) =>
+    bot.command("ver", (context) => getVersion(context));

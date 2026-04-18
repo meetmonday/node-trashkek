@@ -3,7 +3,7 @@
  * @param {Object} ctx - Telegraf context object.
  */
 const hsites = (ctx) => {
-  ctx.reply(`
+  ctx.send(`
 e621.net: e6, e621
 e926.net: e9, e926
 hypnohub.net: hh, hypno, hypnohub
@@ -15,4 +15,5 @@ safebooru.org: sb, safe, safebooru
 derpibooru.org: dp, derp, derpi, derpibooru`);
 };
 
-export default hsites;
+export default (bot: BotType) =>
+    bot.command('hsites', (context) => hsites(context));

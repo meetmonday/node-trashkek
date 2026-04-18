@@ -1,8 +1,8 @@
-/* eslint-disable prefer-destructuring */
 import axios from 'axios';
 import striptags from 'striptags';
+import { htmlToFormattable } from "@gramio/format/html";
 
-import { bold, link } from '#lib/helpers.js';
+import { format, bold, link } from 'gramio';
 
 /**
  * Parses a given URL and extracts topic ID, comment ID, and title.
@@ -15,7 +15,7 @@ import { bold, link } from '#lib/helpers.js';
  * @returns {string} return.title - The extracted title.
  */
 async function parseUrl(url) {
-  let title = "Хуй знает, не существует(((";
+  let title = "Топик";
   const u = new URL(url);
   const path = u.pathname.split('/');
   let topicId = path[2];
@@ -24,7 +24,6 @@ async function parseUrl(url) {
   if (path[1] === 'link') {
   const { data } = await axios.get(`https://${u.host}/api_topics/${topicId}`);
   topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
-  title = Array.from(data.matchAll(/<!\[CDATA\[(.*?)\]\]>/g))[1][1];
   }
 
   return {
@@ -94,6 +93,7 @@ function t2e(text) {
 }
 
 /**
+ * LEGACY
  * Replaces all <img> tags in the given HTML string with <a> tags linking to the image source.
  *
  * @param {string} htmlString - The HTML string containing <img> tags to be replaced.
@@ -117,14 +117,7 @@ function replaceImgWithLink(htmlString, host) {
  * @returns {string} - The processed string with specified HTML tags removed and replacements made.
  */
 function cook(data) {
-  const fin = striptags(
-    data
-      .replaceAll('<br/>   ', '\n')
-      .replaceAll('<li>', '- ')
-      .replaceAll('</li>', '\n'),
-    ['b', 'i', 'u', 'strike', 'a', 'img'],
-  );
-  return fin;
+  return htmlToFormattable(data);
 }
 
 /**
@@ -141,7 +134,7 @@ function cook(data) {
  * @returns {string} The formatted result string.
  */
 function buildResult(d, ld) {
-  return `${t2e(d.login)} ${bold(d.login, true)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `(${d.votes})` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full, true)}`;
+  return format`${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `(${d.votes})` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full)}`;
 }
 
 /**
@@ -155,13 +148,13 @@ function buildResult(d, ld) {
  * @returns {Promise<void>} - A promise that resolves when the function is complete.
  */
 const main = async (ctx) => {
-  const linkData = await parseUrl(ctx.update.message.text);
+  const linkData = await parseUrl(ctx.text);
   const comments = await grabComments(linkData.topic_id, linkData.host);
   const comment = grabCommentById(comments, linkData.comment_id);
   const midresult = buildResult(comment, linkData);
-  const result = replaceImgWithLink(midresult, linkData.host);
-  ctx.sendMessage(result.html, { link_preview_options: { is_disabled: !result.images }, parse_mode: 'html' });
-  ctx.deleteMessage();
+  ctx.send(midresult);
+  ctx.delete();
 };
 
-export default main;
+export default (bot: BotType) =>
+    bot.hears(/#div_comment_/, (context) => main(context));

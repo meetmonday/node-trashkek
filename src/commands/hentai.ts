@@ -1,5 +1,6 @@
-import Booru from 'booru';
-import { rand, link } from '#lib/helpers.js';
+import { search } from 'booru';
+import { rand } from '#lib/helpers.js';
+import { format, link } from 'gramio';
 
 /**
  * Extracts site name and tags from input string.
@@ -18,9 +19,9 @@ const extractSite = (input) => {
  * @param {Object} ctx - Telegraf context object.
  */
 const random = (ctx) => {
-  const randomId = rand(0, 5013920);
+  const randomId = rand(0, 11191117);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
-  ctx.sendMessage(link('Пикча', randomImageUrl), { parse_mode: 'Markdown' });
+  ctx.send(format`${link('Пикча', randomImageUrl)}`);
 };
 
 /**
@@ -30,33 +31,30 @@ const random = (ctx) => {
  * @param {string} site - Booru site identifier.
  */
 const searchCommand = async (tags, ctx, site = 'danbooru') => {
-  await ctx.sendChatAction('upload_photo');
+  ctx.sendChatAction('upload_photo');
 
   try {
-    const res = await Booru.search(site, tags, { limit: 4, random: true });
+    const res = await search(site, tags, { limit: 10, random: true });
 
     if (!res.posts.length) {
-      await ctx.sendMessage('Ничего не найдено');
+      await ctx.reply('Ничего не найдено');
       return;
     }
-
-    console.log(res.posts);
-
-    const photos = res.posts.map((e) => ({
+    
+    const photos = res.posts.filter(f => f.data.file_ext!='mp4').map((e) => ({
       type: 'photo',
       media: e.sample_url || e.preview_url || e.file_url,
       has_spoiler: e.rating === 'e',
-      caption: `score: ${e.score} / id: ${link(e.id, e.booru.domain + e.booru.site.api.postView + e.id)}`,
-      parse_mode: 'Markdown',
+      caption: format`score: ${e.score} / id: ${link(e.id, e.booru.domain + e.booru.site.api.postView + e.id)}`
     }));
 
     try {
       await ctx.sendMediaGroup(photos);
     } catch (err) {
-      await ctx.sendMessage(`Ошибка отправки: ${err.message}`);
+      await ctx.reply(`Ошибка отправки: ${err.message}`);
     }
-  } catch (e) {
-    await ctx.reply(`Ошибка: ${e.message}`);
+  } catch (err) {
+    await ctx.reply(`Ошибка: ${err.message}`);
   }
 };
 
@@ -65,12 +63,13 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
  * @param {Object} ctx - Telegraf context object.
  */
 const hentaiRouter = (ctx) => {
-  if (ctx.payload) {
-    const args = extractSite(ctx.payload);
+  const payload = ctx.text.slice(8) || null
+  if (payload) {
+    const args = extractSite(payload);
 
     const unsupportedSites = ['gelbooru', 'gb', 'rule34', 'r34', 'tb', 'tbib', 'big', 'xb', 'xbooru', 'pa', 'paheal', 'rb', 'realbooru'];
     if (unsupportedSites.includes(args.site)) {
-      ctx.reply('Не поддерживается');
+      ctx.reply('Сайт не поддерживается');
       return;
     }
 
@@ -86,4 +85,5 @@ const hentaiRouter = (ctx) => {
   }
 };
 
-export default hentaiRouter;
+export default (bot: BotType) =>
+    bot.command("hentai", (context) => hentaiRouter(context));

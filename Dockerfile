@@ -1,12 +1,12 @@
-FROM node:20-alpine
+FROM oven/bun:alpine
 
 WORKDIR /usr/src/app
 
 RUN apk --update add ffmpeg
 
 COPY package*.json ./
-RUN npm ci
+RUN bun ci
 
 COPY . .
 
-CMD ["npm", "run", "start"]
+CMD ["bun", "start"]
