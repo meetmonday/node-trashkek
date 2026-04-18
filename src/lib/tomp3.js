@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import { pipeline } from 'stream/promises';
 import { PassThrough } from 'stream';
+import { MediaUpload } from 'gramio';
 
 /**
  * Converts an audio stream from a URL to MP3 format using ffmpeg.
@@ -82,8 +83,8 @@ export async function toMp3Stream(url, options = {}) {
  */
 export async function sendAudioFromUrl(ctx, url, filename = 'file.mp3', options = {}) {
   const stream = await toMp3Stream(url, options);
-  return ctx.replyWithAudio(
-    { source: stream, filename },
+  return ctx.sendAudio(
+    await MediaUpload.stream(stream, filename),
     { performer: options.performer, title: options.title },
   );
 }
