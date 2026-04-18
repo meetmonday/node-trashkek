@@ -1,0 +1,86 @@
+import dl from '#lib/ttdl.js';
+import { sendAudioFromUrl } from '#lib/tomp3.js';
+import { MediaUpload, MediaInput } from 'gramio';
+
+const MAX_BYTES = 50 * 1024 * 1024;
+
+// Reusable AbortController for fetch timeouts
+const FETCH_TIMEOUT_MS = 7000;
+
+/**
+ * Fetches data from a URL with size limit check.
+ * @param {string} url - The URL to fetch.
+ * @returns {Promise<Buffer>} The fetched data as a buffer.
+ * @throws {Error} If fetch fails or file is too large.
+ */
+async function fetchToBuffer(url) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!res.ok) throw new Error(`Fetch ${url} failed: ${res.status}`);
+    const len = res.headers.get('content-length');
+    if (len && Number(len) > MAX_BYTES) throw new Error('File too large');
+    const buffer = await res.arrayBuffer();
+    return Buffer.from(buffer);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+/**
+ * Handles TikTok video/image download and sends to user.
+ * @param {Object} ctx - Telegraf context object.
+ */
+async function main(ctx) {
+  const url = ctx.text;
+
+  try {
+    const { data } = await dl(url);
+    const caption = `👨‍🦰${data.author.nickname}\n❤️${data.digg_count} 👁${data.play_count}\n${data.title}`;
+
+    if (data.images) {
+      // Handle slideshow (images)
+      const audioUrl = data.play;
+
+      // const buffers = await Promise.all(
+      //   data.images.map(async (imageUrl) => {
+      //     const buf = await fetchToBuffer(imageUrl);
+      //     return { buffer: buf, url: imageUrl };
+      //   }),
+      // );
+
+      const mediaGroup = await data.images.map( (b, idx) => MediaInput.photo(
+        b,
+        { caption: idx === 0 ? caption : undefined }
+      ));
+
+      await ctx.sendMediaGroup(mediaGroup)
+
+      await sendAudioFromUrl(ctx, audioUrl, 'audio.mp3', {
+        performer: data.music_info.author,
+        title: data.music_info.title,
+      });
+    } else {
+      // Handle single video
+      console.log(data)
+      await ctx.sendVideo(await MediaUpload.url(data.play),
+        { 
+          thumbnail: MediaUpload.url(data.cover),
+          duration: data.duration,
+          supports_streaming: true,
+          caption
+        }
+      );
+    }
+  } catch (e) {
+    console.error('TikTok handler error:', e);
+  }
+}
+
+export default (bot: BotType) =>
+    bot.hears(/tiktok\.com/, (context) => main(context));
