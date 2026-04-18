@@ -19,7 +19,7 @@ const extractSite = (input) => {
  * @param {Object} ctx - Telegraf context object.
  */
 const random = (ctx) => {
-  const randomId = rand(0, 5013920);
+  const randomId = rand(0, 11191117);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
   ctx.send(format`${link('Пикча', randomImageUrl)}`);
 };
@@ -34,14 +34,14 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
   ctx.sendChatAction('upload_photo');
 
   try {
-    const res = await search(site, tags, { limit: 4, random: true });
+    const res = await search(site, tags, { limit: 10, random: true });
 
     if (!res.posts.length) {
-      await ctx.send('Ничего не найдено');
+      await ctx.reply('Ничего не найдено');
       return;
     }
-
-    const photos = res.posts.map((e) => ({
+    
+    const photos = res.posts.filter(f => f.data.file_ext!='mp4').map((e) => ({
       type: 'photo',
       media: e.sample_url || e.preview_url || e.file_url,
       has_spoiler: e.rating === 'e',
@@ -51,10 +51,10 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
     try {
       await ctx.sendMediaGroup(photos);
     } catch (err) {
-      await ctx.sendMessage(`Ошибка отправки: ${err.message}`);
+      await ctx.reply(`Ошибка отправки: ${err.message}`);
     }
-  } catch (e) {
-    await ctx.reply(`Ошибка: ${e.message}`);
+  } catch (err) {
+    await ctx.reply(`Ошибка: ${err.message}`);
   }
 };
 
@@ -69,13 +69,13 @@ const hentaiRouter = (ctx) => {
 
     const unsupportedSites = ['gelbooru', 'gb', 'rule34', 'r34', 'tb', 'tbib', 'big', 'xb', 'xbooru', 'pa', 'paheal', 'rb', 'realbooru'];
     if (unsupportedSites.includes(args.site)) {
-      ctx.send('Не поддерживается');
+      ctx.reply('Сайт не поддерживается');
       return;
     }
 
     const danbooruVariants = ['danbooru', 'db', 'dan', 'dp', 'derp', 'derpi', 'derpibooru'];
     if (danbooruVariants.includes(args.site) && !args.tags) {
-      ctx.send('Поиск только с тегами');
+      ctx.reply('Поиск только с тегами');
       return;
     }
 

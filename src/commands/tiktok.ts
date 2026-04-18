@@ -8,7 +8,7 @@ import { MediaUpload, MediaInput } from 'gramio';
  */
 async function main(ctx, retry = 0) {
   const url = ctx.text;
-  if(retry > 5) { ctx.send('Ну ваще никак братан'); return false;}
+  if(retry > 5) { ctx.reply('Ну ваще никак братан'); return false;}
   try {
     const { data } = await dl(url);
     const caption = `👨‍🦰${data.author.nickname}\n❤️${data.digg_count} 👁${data.play_count}\n${data.title}`;
@@ -40,7 +40,7 @@ async function main(ctx, retry = 0) {
       );
     }
   } catch (e) {
-    ctx.send('У пидорасов опять api сдохло, увы')
+    if(!retry) ctx.send('У пидорасов опять api сдохло, увы')
     console.error('TikTok handler error:', e);
     main(ctx, ++retry)
   }

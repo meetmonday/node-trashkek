@@ -100,7 +100,6 @@ function t2e(text) {
  * @returns {{html: string, images: boolean}} An object containing the modified HTML string and a boolean indicating if any images were found.
  */
 function replaceImgWithLink(htmlString, host) {
-  console.log(htmlString)
   let images = false;
   const newHtmlString = htmlString.replace(/<img([^>]*)>/gi, (match, p1) => {
     const srcMatch = p1.match(/src=(["'])(.*?)\1/);

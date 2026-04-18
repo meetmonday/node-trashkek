@@ -7,9 +7,9 @@
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "@gramio/autoload": "^1.1.0",
     "@gramio/format": "^0.7.0",
-    "axios": "^1.7.9",
+    "axios": "^1.15.0",
     "booru": "^2.9.0",
-    "cheerio": "^1.0.0-rc.6",
+    "cheerio": "^1.2.0",
     "fluent-ffmpeg": "^2.1.3",
     "gramio": "^0.9.0",
     "node-html-parser": "^7.1.0"
