@@ -1,4 +1,4 @@
-FROM oven/bun:alpine-latest
+FROM oven/bun:alpine
 
 WORKDIR /usr/src/app
 
