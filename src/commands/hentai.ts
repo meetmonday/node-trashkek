@@ -31,7 +31,7 @@ const random = (ctx) => {
  * @param {string} site - Booru site identifier.
  */
 const searchCommand = async (tags, ctx, site = 'danbooru') => {
-  await ctx.sendChatAction('upload_photo');
+  ctx.sendChatAction('upload_photo');
 
   try {
     const res = await search(site, tags, { limit: 4, random: true });
