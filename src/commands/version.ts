@@ -72,7 +72,7 @@ async function generateChangelog(owner, repo, numEntries) {
  * @param {Object} ctx - Telegraf context object.
  */
 const getVersion = async (ctx) => {
-  const numEntries = ctx.payload || DEFAULT_CHANGELOG_ENTRIES;
+  const numEntries = ctx.text.split(' ')[1] || DEFAULT_CHANGELOG_ENTRIES;
 
   try {
     const changelog = await generateChangelog(GITHUB_OWNER, GITHUB_REPO, numEntries);
