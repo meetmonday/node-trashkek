@@ -5,8 +5,10 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@gramio/auto-retry": "^0.0.3",
     "@gramio/autoload": "^1.1.0",
     "@gramio/format": "^0.7.0",
+    "@gramio/rate-limit": "^0.0.1",
     "axios": "^1.15.0",
     "booru": "^2.9.0",
     "cheerio": "^1.2.0",

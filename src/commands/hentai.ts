@@ -51,10 +51,10 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
     try {
       await ctx.sendMediaGroup(photos);
     } catch (err) {
-      await ctx.reply(`Ошибка отправки: ${err.message}`);
+      if(err.code!=429) ctx.reply(`Ошибка отправки: ${err.message}`);
     }
   } catch (err) {
-    await ctx.reply(`Ошибка: ${err.message}`);
+    ctx.reply(`Ошибка: ${err.message}`);
   }
 };
 
@@ -63,7 +63,7 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
  * @param {Object} ctx - Telegraf context object.
  */
 const hentaiRouter = (ctx) => {
-  const payload = ctx.text.slice(8) || null
+  const payload = ctx.args;
   if (payload) {
     const args = extractSite(payload);
 
@@ -86,4 +86,6 @@ const hentaiRouter = (ctx) => {
 };
 
 export default (bot: BotType) =>
-    bot.command("hentai", (context) => hentaiRouter(context));
+    bot.command("hentai", (context) => hentaiRouter(context), 
+      { rateLimit: { limit: 10, window: 30 }}
+    );
