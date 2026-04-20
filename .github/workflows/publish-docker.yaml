@@ -7,10 +7,9 @@ on:
       - '.github/workflows/publish-docker.yaml'
       - 'src/**'
       - '.dockerignore'
-      - 'dgdata.txt'
+      - 'dgdata.db'
       - 'Dockerfile'
       - 'package.json'
-      - 'package-lock.json'
       - 'bun.lock'
 
 env:

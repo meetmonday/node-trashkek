@@ -1,19 +1,33 @@
-import fs from 'fs/promises';
-import { rand } from '#lib/helpers.js';
+import { Database } from 'bun:sqlite';
 
-// Cache for lines data - loaded once on first access
-let linesCache = null;
+let dbInstance: Database | null = null;
+
+function getDb(): Database {
+  if (!dbInstance) {
+    dbInstance = new Database('dgdata.db', { readonly: true });
+  }
+  return dbInstance;
+}
+
 
 /**
- * Loads lines from dgdata.txt file with caching.
- * @returns {Promise<string[]>} Array of lines from the file.
+ * Get random line from SQLite database
  */
-async function loadLines() {
-  if (!linesCache) {
-    const content = await fs.readFile('dgdata.txt', 'utf8');
-    linesCache = content.split('<br>').filter(Boolean);
+function getRandomLine(): string {
+  const db = getDb();
+  // Get total count
+  const result = db.query('SELECT COUNT(*) as count FROM lines').get() as { count: number };
+  const count = result.count;
+
+  if (count === 0) {
+    return '';
   }
-  return linesCache;
+
+  // Get random row using efficient method
+  const randomOffset = Math.floor(Math.random() * count);
+  const row = db.query('SELECT text FROM lines LIMIT 1 OFFSET ?').get(randomOffset) as { text: string } | undefined;
+
+  return row?.text || '';
 }
 
 /**
@@ -21,15 +35,14 @@ async function loadLines() {
  * @param {Object} ctx - Telegraf context object.
  */
 const main = async (ctx) => {
-  const lines = await loadLines();
-  const randomId = rand(0, lines.length - 1);
+  const text = getRandomLine();
 
   ctx.answerInlineQuery([{
     type: 'article',
-    id: randomId,
-    title: `Выебать мамку - ${randomId}`,
+    id: crypto.randomUUID(),
+    title: `Выебать мамку`,
     input_message_content: {
-      message_text: lines[randomId],
+      message_text: text,
     },
   }], {
     cache_time: 1,

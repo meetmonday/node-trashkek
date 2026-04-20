@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 RUN apk --update add ffmpeg
 
 COPY package*.json ./
+COPY bun.lock ./
 RUN bun ci
 
 COPY . .
