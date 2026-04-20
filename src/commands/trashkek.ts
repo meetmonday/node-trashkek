@@ -1,4 +1,3 @@
-import axios from 'axios';
 import striptags from 'striptags';
 import { htmlToFormattable } from "@gramio/format/html";
 
@@ -22,14 +21,16 @@ async function parseUrl(url) {
   const commentId = u.hash.split('_')[2];
 
   if (path[1] === 'link') {
-  const { data } = await axios.get(`https://${u.host}/api_topics/${topicId}`);
-  topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
+    const res = await fetch(`https://${u.host}/api_topics/${topicId}`);
+    if (!res.ok) throw new Error(`Апи топиков: ЛИКВИДИРОВАНО: ${res.status}`);
+    const data = await res.text();
+    topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
   }
 
   return {
-    topic_id: topicId,
-    comment_id: commentId,
-    full: url,
+    topicId,
+    commentId,
+    url,
     title,
     host: u.host
   };
@@ -42,8 +43,11 @@ async function parseUrl(url) {
  * @returns {Promise<Array>} A promise that resolves to an array of comments.
  */
 async function grabComments(topicId, host) {
-  const e = await axios.get(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
-  return e.data.comments;
+  const res = await fetch(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
+  if (!res.ok) throw new Error(`Апи каментов: ЛИКВИДИРОВАНО: ${res.status}`);
+
+  const data = await res.json();
+  return data.comments;
 }
 
 /**
@@ -85,39 +89,11 @@ function timeAgo(ts) {
  * @param {string} text - The input text to be converted to an emoji.
  * @returns {string} - An emoji corresponding to the sum of the character codes of the input text.
  */
-function t2e(text) {
+function text2emoji(text) {
   const emojis = ['🌚', '💬', '🏳️‍🌈', '🙂', '🤡', '💩', '🐔', '😂', '♿️', '👹'];
   const bytes = text.split('').map((e) => e.charCodeAt(0));
   const sum = bytes.reduce((x, y) => x + y);
   return emojis[sum % 10];
-}
-
-/**
- * LEGACY
- * Replaces all <img> tags in the given HTML string with <a> tags linking to the image source.
- *
- * @param {string} htmlString - The HTML string containing <img> tags to be replaced.
- * @returns {{html: string, images: boolean}} An object containing the modified HTML string and a boolean indicating if any images were found.
- */
-function replaceImgWithLink(htmlString, host) {
-  let images = false;
-  const newHtmlString = htmlString.replace(/<img([^>]*)>/gi, (match, p1) => {
-    const srcMatch = p1.match(/src=(["'])(.*?)\1/);
-    const src = srcMatch ? srcMatch[2] : '';
-    images = true;
-    return `<a href="https://${host}${src}">🖼 Пикча</a>`;
-  });
-  return { html: newHtmlString, images };
-}
-
-/**
- * Processes the input HTML string by removing certain tags and replacing specific HTML elements with plain text equivalents.
- *
- * @param {string} data - The input HTML string to be processed.
- * @returns {string} - The processed string with specified HTML tags removed and replacements made.
- */
-function cook(data) {
-  return htmlToFormattable(data);
 }
 
 /**
@@ -134,7 +110,11 @@ function cook(data) {
  * @returns {string} The formatted result string.
  */
 function buildResult(d, ld) {
-  return format`${t2e(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `(${d.votes})` : ''}\n${cook(d.content)}\n\n📜 ${link(ld.title, ld.full)}`;
+  return format`
+    ${text2emoji(d.login)} ${bold(d.login)}, ${timeAgo(d.posted)} назад ${parseInt(d.votes, 10) !== 0 ? `(${d.votes})` : ''}\n
+    ${htmlToFormattable(d.content)}\n\n📜 
+    ${link(ld.title, ld.url)}
+  `;
 }
 
 /**
@@ -147,12 +127,11 @@ function buildResult(d, ld) {
  * 
  * @returns {Promise<void>} - A promise that resolves when the function is complete.
  */
-const main = async (ctx) => {
-  const linkData = await parseUrl(ctx.text);
-  const comments = await grabComments(linkData.topic_id, linkData.host);
-  const comment = grabCommentById(comments, linkData.comment_id);
-  const midresult = buildResult(comment, linkData);
-  ctx.send(midresult);
+const main = (ctx) => {
+  const linkData = parseUrl(ctx.text);
+  const comments = grabComments(linkData.topicId, linkData.host);
+  const comment = grabCommentById(comments, linkData.commentId);
+  ctx.send(buildResult(comment, linkData));
   ctx.delete();
 };
 

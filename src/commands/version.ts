@@ -1,18 +1,4 @@
 import { execSync } from 'child_process';
-import axios from 'axios';
-
-const GITHUB_OWNER = 'meetmonday';
-const GITHUB_REPO = 'node-trashkek';
-const DEFAULT_CHANGELOG_ENTRIES = 7;
-
-// Create a reusable axios instance with optimized defaults
-const apiClient = axios.create({
-  baseURL: 'https://api.github.com',
-  timeout: 10000,
-  headers: {
-    'User-Agent': 'node-trashkek-bot',
-  },
-});
 
 /**
  * Gets the current git commit hash.
@@ -29,14 +15,13 @@ function getCurrentCommitHash() {
 
 /**
  * Fetches commit history from GitHub repository.
- * @param {string} owner - Repository owner.
- * @param {string} repo - Repository name.
  * @returns {Promise<Array|null>} Array of commits or null on error.
  */
-async function getCommitHistory(owner, repo) {
+async function getCommitHistory() {
   try {
-    const response = await apiClient.get(`/repos/${owner}/${repo}/commits`);
-    return response.data;
+    const response = await fetch(`https://api.github.com/repos/meetmonday/node-trashkek/commits`);
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching commit history:', error.message);
     return null;
@@ -45,13 +30,11 @@ async function getCommitHistory(owner, repo) {
 
 /**
  * Generates a changelog from recent commits.
- * @param {string} owner - Repository owner.
- * @param {string} repo - Repository name.
  * @param {number} numEntries - Number of entries to include.
  * @returns {Promise<Array|null>} Array of changelog entries or null.
  */
-async function generateChangelog(owner, repo, numEntries) {
-  const commitHistory = await getCommitHistory(owner, repo);
+async function generateChangelog(numEntries) {
+  const commitHistory = await getCommitHistory();
   if (!commitHistory) {
     console.error('Failed to retrieve commit history. Changelog generation aborted.');
     return null;
@@ -72,10 +55,10 @@ async function generateChangelog(owner, repo, numEntries) {
  * @param {Object} ctx - Telegraf context object.
  */
 const getVersion = async (ctx) => {
-  const numEntries = ctx.text.split(' ')[1] || DEFAULT_CHANGELOG_ENTRIES;
+  const numEntries = ctx.args || 7;
 
   try {
-    const changelog = await generateChangelog(GITHUB_OWNER, GITHUB_REPO, numEntries);
+    const changelog = await generateChangelog(numEntries);
 
     const messages = ['ЧЛЕНДЖЛОГ:'];
     if (changelog) {
