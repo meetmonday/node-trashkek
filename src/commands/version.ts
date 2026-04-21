@@ -1,3 +1,4 @@
+import type { BotType } from '..';
 import { execSync } from 'child_process';
 
 /**
@@ -15,16 +16,18 @@ function getCurrentCommitHash() {
 
 /**
  * Fetches commit history from GitHub repository.
- * @returns {Promise<Array|null>} Array of commits or null on error.
+ * @returns {Promise<Array>} Array of commits or [] on error.
  */
-async function getCommitHistory() {
+async function getCommitHistory(): Promise<Array<string>> {
   try {
     const response = await fetch(`https://api.github.com/repos/meetmonday/node-trashkek/commits`);
     const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching commit history:', error.message);
-    return null;
+    return data as string[];
+  } catch (err) {
+    if (err instanceof Error) {
+      console.log(err.message);
+    }
+    return [];
   }
 }
 
@@ -33,7 +36,7 @@ async function getCommitHistory() {
  * @param {number} numEntries - Number of entries to include.
  * @returns {Promise<Array|null>} Array of changelog entries or null.
  */
-async function generateChangelog(numEntries) {
+async function generateChangelog(numEntries: number) {
   const commitHistory = await getCommitHistory();
   if (!commitHistory) {
     console.error('Failed to retrieve commit history. Changelog generation aborted.');
@@ -43,7 +46,7 @@ async function generateChangelog(numEntries) {
   const currentCommitHash = getCurrentCommitHash();
   const recentCommits = commitHistory.slice(0, numEntries);
 
-  return recentCommits.map((commit, index) => {
+  return recentCommits.map((commit: any, index: number) => {
     const shortSha = commit.sha.slice(0, 7);
     const marker = shortSha === currentCommitHash ? ' ◀' : '';
     return `${index + 1}. ${shortSha}${marker}: ${commit.commit.message}`;
@@ -54,7 +57,7 @@ async function generateChangelog(numEntries) {
  * Handler for version command.
  * @param {Object} ctx - Telegraf context object.
  */
-const getVersion = async (ctx) => {
+const getVersion = async (ctx: any) => {
   const numEntries = ctx.args || 7;
 
   try {

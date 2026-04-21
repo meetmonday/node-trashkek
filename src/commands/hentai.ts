@@ -1,15 +1,18 @@
 import { search } from 'booru';
-import { rand } from '#lib/helpers.js';
+import { rand } from '@/helpers/rand';
 import { format, link } from 'gramio';
+import type { BotType } from '..';
+
+const DEFAULT_SITE = 'danbooru'
 
 /**
  * Extracts site name and tags from input string.
  * @param {string} input - Input string in format "@site tags" or just "tags".
  * @returns {{site: string, tags: string}} Object containing site name and tags.
  */
-const extractSite = (input) => {
+const extractSite = (input: string): { site: string; tags: string; } => {
   const match = input.match(/@\w+/);
-  const site = match ? match[0].slice(1) : 'danbooru';
+  const site = match ? match[0].slice(1) : DEFAULT_SITE;
   const tags = input.replace(/@\w+/, '').trim();
   return { site, tags };
 };
@@ -18,7 +21,7 @@ const extractSite = (input) => {
  * Sends a random image from Danbooru.
  * @param {Object} ctx - Telegraf context object.
  */
-const random = (ctx) => {
+const random = (ctx: any) => {
   const randomId = rand(0, 11191117);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
   ctx.send(format`${link('Пикча', randomImageUrl)}`);
@@ -27,10 +30,10 @@ const random = (ctx) => {
 /**
  * Searches for images on a booru site and sends them as a media group.
  * @param {string} tags - Search tags.
- * @param {Object} ctx - Telegraf context object.
+ * @param ctx - Telegraf context object.
  * @param {string} site - Booru site identifier.
  */
-const searchCommand = async (tags, ctx, site = 'danbooru') => {
+const searchCommand = async (tags: string, ctx: any, site: string = DEFAULT_SITE) => {
   ctx.sendChatAction('upload_photo');
 
   try {
@@ -41,7 +44,7 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
       return;
     }
     
-    const photos = res.posts.filter(f => f.data.file_ext!='mp4').map((e) => ({
+    const photos = res.posts.map((e) => ({
       type: 'photo',
       media: e.sample_url || e.preview_url || e.file_url,
       has_spoiler: e.rating === 'e',
@@ -51,19 +54,19 @@ const searchCommand = async (tags, ctx, site = 'danbooru') => {
     try {
       await ctx.sendMediaGroup(photos);
     } catch (err) {
-      if(err.code!=429) ctx.reply(`Ошибка отправки: ${err.message}`);
+      ctx.reply(`Ошибка отправки: ${(err as Error).message}`);
     }
   } catch (err) {
-    ctx.reply(`Ошибка: ${err.message}`);
+    ctx.reply(`Ошибка: ${(err as Error).message}`);
   }
 };
 
 /**
  * Routes hentai command requests based on arguments.
- * @param {Object} ctx - Telegraf context object.
+ * @param ctx - Telegraf context object.
  */
-const hentaiRouter = (ctx) => {
-  const payload = ctx.args;
+const hentaiRouter = (ctx: any) => {
+  const payload: string = ctx.args;
   if (payload) {
     const args = extractSite(payload);
 
@@ -87,5 +90,5 @@ const hentaiRouter = (ctx) => {
 
 export default (bot: BotType) =>
     bot.command("hentai", (context) => hentaiRouter(context), 
-      { rateLimit: { limit: 10, window: 30 }}
+      { rateLimit: { limit: 10, window: 15 }}
     );

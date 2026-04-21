@@ -11,9 +11,9 @@ import { MediaUpload } from 'gramio';
  * @param {number} options.timeoutMs - Request timeout in milliseconds.
  * @returns {Promise<Stream>} MP3 audio stream.
  */
-export async function toMp3Stream(url, options = {}) {
-  const bitrate = options.bitrate || '192k';
-  const timeoutMs = options.timeoutMs || 15000;
+export async function toMp3Stream(url: string) {
+  const bitrate = '128k';
+  const timeoutMs = 15000;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -73,17 +73,21 @@ export async function toMp3Stream(url, options = {}) {
   }
 }
 
+interface AudioInfo {
+  performer?: string;
+  title?: string;
+}
+
 /**
  * Sends an audio file converted from URL to the chat.
- * @param {Object} ctx - Telegraf context object.
+ * @param {any} ctx - Context object.
  * @param {string} url - The URL of the audio source.
  * @param {string} filename - Output filename (default: 'file.mp3').
  * @param {Object} options - Additional options (performer, title).
- * @returns {Promise<Object>} Telegram API response.
  */
-export async function sendAudioFromUrl(ctx, url, filename = 'file.mp3', options = {}) {
-  const stream = await toMp3Stream(url, options);
-  return ctx.sendAudio(
+export async function sendAudioFromUrl(ctx: any, url: string, filename = 'file.mp3', options: AudioInfo = {}) {
+  const stream = await toMp3Stream(url);
+  await ctx.sendAudio(
     await MediaUpload.stream(stream, filename),
     { performer: options.performer, title: options.title },
   );

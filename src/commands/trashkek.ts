@@ -1,7 +1,6 @@
-import striptags from 'striptags';
 import { htmlToFormattable } from "@gramio/format/html";
-
 import { format, bold, link } from 'gramio';
+import type { BotType } from "..";
 
 /**
  * Parses a given URL and extracts topic ID, comment ID, and title.
@@ -13,18 +12,18 @@ import { format, bold, link } from 'gramio';
  * @returns {string} return.full - The full URL.
  * @returns {string} return.title - The extracted title.
  */
-async function parseUrl(url) {
+async function parseUrl(url: string) {
   let title = "Топик";
   const u = new URL(url);
-  const path = u.pathname.split('/');
-  let topicId = path[2];
+  const path: Array<string> = u.pathname.split('/');
+  let topicId: number = path[2];
   const commentId = u.hash.split('_')[2];
 
   if (path[1] === 'link') {
     const res = await fetch(`https://${u.host}/api_topics/${topicId}`);
     if (!res.ok) throw new Error(`Апи топиков: ЛИКВИДИРОВАНО: ${res.status}`);
     const data = await res.text();
-    topicId = data.match(/<trashTopicId>([0-9]*)/)[1];
+    topicId = data.match(/<trashTopicId>([0-9]*)/)[1] || 0;
   }
 
   return {
@@ -127,7 +126,7 @@ function buildResult(d, ld) {
  * 
  * @returns {Promise<void>} - A promise that resolves when the function is complete.
  */
-const main = (ctx) => {
+const main = (ctx: any) => {
   const linkData = parseUrl(ctx.text);
   const comments = grabComments(linkData.topicId, linkData.host);
   const comment = grabCommentById(comments, linkData.commentId);

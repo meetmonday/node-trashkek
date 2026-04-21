@@ -4,7 +4,7 @@
  * @param {number} max - Maximum value (exclusive).
  * @returns {number} Random integer.
  */
-const rand = (min, max) => Math.floor(Math.random() * (max - min)) + min;
+const rand = (min: number, max: number): number => Math.floor(Math.random() * (max - min)) + min;
 
 export {
   rand,

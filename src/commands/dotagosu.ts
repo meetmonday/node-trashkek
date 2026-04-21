@@ -1,3 +1,4 @@
+import type { BotType } from '..';
 import { Database } from 'bun:sqlite';
 
 let dbInstance: Database | null = null;
@@ -32,9 +33,9 @@ function getRandomLine(): string {
 
 /**
  * Handler for inline queries - returns a random line from dgdata.txt.
- * @param {Object} ctx - Telegraf context object.
+ * @param ctx - Context object.
  */
-const main = async (ctx) => {
+const main = async (ctx: any) => {
   const text = getRandomLine();
 
   ctx.answerInlineQuery([{
