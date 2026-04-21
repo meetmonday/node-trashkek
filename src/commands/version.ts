@@ -1,5 +1,6 @@
-import type { BotType } from '..';
 import { execSync } from 'child_process';
+
+import type { BotType } from '..';
 
 /**
  * Gets the current git commit hash.

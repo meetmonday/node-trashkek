@@ -1,6 +1,8 @@
-import type { BotType } from "..";
 import { format } from 'gramio';
 
+import type { BotType } from "..";
+
+/** * A command that lists the supported booru sites and their aliases. */
 export default (bot: BotType) =>
   bot.command('hsites', (context) => context.send(format`
     e621.net: e6, e621

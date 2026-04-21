@@ -1,9 +1,14 @@
+import { format, link } from 'gramio';
 import { search } from 'booru';
 import { rand } from '@/helpers/rand';
-import { format, link } from 'gramio';
+
 import type { BotType } from '..';
 
 const DEFAULT_SITE = 'danbooru'
+
+/**
+ * TODO: переработать
+ */
 
 /**
  * Extracts site name and tags from input string.

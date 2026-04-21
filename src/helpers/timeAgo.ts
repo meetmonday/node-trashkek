@@ -8,7 +8,8 @@ const TIME_UNITS: [string, number][] = [
 /** 
  * Converts a timestamp to a human-readable "time ago" format.
  * @param {number} ts - Timestamp
- * @returns {TimeAgoResult} 
+ * @param {boolean} [text=false] - If true, returns a string; otherwise, returns an object with value and unit.
+ * @returns {string | { value: number; unit: string; }} - The time ago representation.
 */
 
 export default function timeAgo(ts: number | string, text: boolean = false): { value: number; unit: string; } | string {

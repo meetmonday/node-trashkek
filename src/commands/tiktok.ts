@@ -1,7 +1,8 @@
-import type { BotType } from '..';
 import { MediaUpload, MediaInput } from 'gramio';
 import { sendAudioFromUrl } from '@/helpers/tomp3.ts';
+
 import type { TikTokApiResponse } from '@/types/tiktok';
+import type { BotType } from '..';
 
 /**
  * Handles TikTok video/image download and sends to user.
@@ -23,6 +24,7 @@ async function main(ctx: any) {
   const caption = `👨‍🦰${data.author.nickname}\n❤️${data.digg_count} 👁${data.play_count}\n${data.title}`;
 
   if (data.images) {
+    // Handle images
     ctx.sendChatAction('upload_photo');
     const mediaGroup = data.images.map((b, idx) => MediaInput.photo(
       b, { caption: idx === 0 ? caption : undefined }
@@ -35,7 +37,7 @@ async function main(ctx: any) {
       title: data.music_info.title,
     });
   } else {
-    // Handle single video
+    // Handle video
     ctx.sendChatAction('upload_video');
     await ctx.sendVideo(await MediaUpload.url(data.play),
       {

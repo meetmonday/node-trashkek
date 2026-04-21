@@ -1,8 +1,13 @@
-import type { BotType } from '..';
 import { Database } from 'bun:sqlite';
+
+import type { BotType } from '..';
 
 let dbInstance: Database | null = null;
 
+/**
+ * Get or create a singleton instance of the SQLite database
+ * @returns {Database} The SQLite database instance
+ */
 function getDb(): Database {
   if (!dbInstance) {
     dbInstance = new Database('dgdata.db', { readonly: true });
@@ -32,8 +37,8 @@ function getRandomLine(): string {
 }
 
 /**
- * Handler for inline queries - returns a random line from dgdata.txt.
- * @param ctx - Context object.
+ * Handle inline query
+ * @param ctx - Telegram inline query context
  */
 const main = async (ctx: any) => {
   const text = getRandomLine();

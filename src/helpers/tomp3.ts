@@ -6,9 +6,6 @@ import { MediaUpload } from 'gramio';
 /**
  * Converts an audio stream from a URL to MP3 format using ffmpeg.
  * @param {string} url - The URL of the audio source.
- * @param {Object} options - Conversion options.
- * @param {string} options.bitrate - Audio bitrate (default: '192k').
- * @param {number} options.timeoutMs - Request timeout in milliseconds.
  * @returns {Promise<Stream>} MP3 audio stream.
  */
 export async function toMp3Stream(url: string) {
@@ -83,7 +80,7 @@ interface AudioInfo {
  * @param {any} ctx - Context object.
  * @param {string} url - The URL of the audio source.
  * @param {string} filename - Output filename (default: 'file.mp3').
- * @param {Object} options - Additional options (performer, title).
+ * @param {AudioInfo} options - Additional options (performer, title).
  */
 export async function sendAudioFromUrl(ctx: any, url: string, filename = 'file.mp3', options: AudioInfo = {}) {
   const stream = await toMp3Stream(url);
