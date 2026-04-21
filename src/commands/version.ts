@@ -25,7 +25,7 @@ async function getCommitHistory(): Promise<Array<string>> {
     return data as string[];
   } catch (err) {
     if (err instanceof Error) {
-      console.log(err.message);
+      console.error(err.message);
     }
     return [];
   }

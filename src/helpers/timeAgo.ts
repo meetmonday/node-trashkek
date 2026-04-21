@@ -1,9 +1,3 @@
-
-interface TimeAgoResult {
-  value: number;
-  unit: string;
-}
-
 const TIME_UNITS: [string, number][] = [
   ['дн.', 86400],
   ['ч.', 3600],
@@ -17,16 +11,21 @@ const TIME_UNITS: [string, number][] = [
  * @returns {TimeAgoResult} 
 */
 
-export default function timeAgo(ts: number): TimeAgoResult {
-  const diff = Math.floor(Date.now() / 1000) - ts;
+export default function timeAgo(ts: number | string, text: boolean = false): { value: number; unit: string; } | string {
+  const diff = Math.floor(Date.now() / 1000) - (typeof ts === "string" ? parseInt(ts, 10) : ts);
 
   if (diff < 0) return { value: 0, unit: 'в будущем' };
   if (diff < 1) return { value: 0, unit: 'только что' };
 
   const [unit, seconds] = TIME_UNITS.find(([, s]) => diff >= s)!;
 
-  return {
-    value: Math.floor(diff / seconds),
-    unit
-  };
+  if (!text) {
+    return {
+      value: Math.floor(diff / seconds),
+      unit
+    };
+  }
+  else {
+    return `${Math.floor(diff / seconds)} ${unit}`;
+  }
 }
