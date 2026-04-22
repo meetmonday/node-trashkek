@@ -1,6 +1,6 @@
 import { format, link } from 'gramio';
 import { search } from 'booru';
-import { rand } from '@/helpers/rand';
+import rand from '@/helpers/rand';
 
 import type { BotType } from '..';
 
@@ -24,7 +24,7 @@ const extractSite = (input: string): { site: string; tags: string; } => {
 
 /**
  * Sends a random image from Danbooru.
- * @param {Object} ctx - Telegraf context object.
+ * @param {Object} ctx - Context object.
  */
 const random = (ctx: any) => {
   const randomId = rand(0, 11191117);
@@ -35,10 +35,10 @@ const random = (ctx: any) => {
 /**
  * Searches for images on a booru site and sends them as a media group.
  * @param {string} tags - Search tags.
- * @param ctx - Telegraf context object.
+ * @param ctx - Context object.
  * @param {string} site - Booru site identifier.
  */
-const searchCommand = async (tags: string, ctx: any, site: string = DEFAULT_SITE) => {
+const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE) => {
   ctx.sendChatAction('upload_photo');
 
   try {
@@ -58,37 +58,34 @@ const searchCommand = async (tags: string, ctx: any, site: string = DEFAULT_SITE
 
     try {
       await ctx.sendMediaGroup(photos);
-    } catch (err) {
+    } 
+    catch (err) {
       ctx.reply(`Ошибка отправки: ${(err as Error).message}`);
     }
-  } catch (err) {
+  } 
+  catch (err) {
     ctx.reply(`Ошибка: ${(err as Error).message}`);
   }
 };
 
 /**
  * Routes hentai command requests based on arguments.
- * @param ctx - Telegraf context object.
+ * @param ctx - Context object.
  */
 const hentaiRouter = (ctx: any) => {
   const payload: string = ctx.args;
   if (payload) {
     const args = extractSite(payload);
 
-    const unsupportedSites = ['gelbooru', 'gb', 'rule34', 'r34', 'tb', 'tbib', 'big', 'xb', 'xbooru', 'pa', 'paheal', 'rb', 'realbooru'];
-    if (unsupportedSites.includes(args.site)) {
-      ctx.reply('Сайт не поддерживается');
-      return;
-    }
-
-    const danbooruVariants = ['danbooru', 'db', 'dan', 'dp', 'derp', 'derpi', 'derpibooru'];
-    if (danbooruVariants.includes(args.site) && !args.tags) {
+    const tagsOnly = ['danbooru', 'db', 'dan', 'dp', 'derp', 'derpi', 'derpibooru'];
+    if (tagsOnly.includes(args.site) && !args.tags) {
       ctx.reply('Поиск только с тегами');
       return;
     }
 
-    searchCommand(args.tags, ctx, args.site);
-  } else {
+    searchCommand(ctx, args.tags, args.site);
+  } 
+  else {
     random(ctx);
   }
 };

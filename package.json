@@ -18,6 +18,7 @@
     "node-html-markdown": "^2.0.0"
   },
   "devDependencies": {
+    "@gramio/test": "^0.7.0",
     "@types/bun": "latest",
     "typescript": "6"
   },

@@ -15,7 +15,7 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
   let topicId: number = 0;
   let commentId: number = parseInt(u.hash.split("_")[2] ?? "0", 10);
 
-  if (pathParts.length < 2) {
+  if (pathParts.length < 2 || commentId === 0) {
     throw new Error("Некорректная ссылка");
   }
 

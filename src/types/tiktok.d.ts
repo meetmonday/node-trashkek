@@ -1,7 +1,7 @@
 export interface ImageInfo {
   height: number;
   uri: string;
-  url_list: string[];
+  url_list: Array<string>;
   url_prefix: string | null;
   width: number;
 }
@@ -17,12 +17,12 @@ export interface Anchor {
   anchor_strong: string | null;
   component_key: string;
   description: string;
-  extra: string; // ⚠️ JSON-строка
+  extra: string; // JSON
   general_type?: number;
   icon: ImageInfo;
   id: string;
   keyword: string;
-  log_extra: string; // ⚠️ JSON-строка
+  log_extra: string; // JSON
   schema: string;
   thumbnail: ImageInfo;
   type: number;
@@ -43,7 +43,7 @@ export interface CommerceInfo {
   auction_ad_invited: boolean;
   branded_content_type: number;
   is_diversion_ad: number;
-  organic_log_extra: string; // ⚠️ JSON-строка
+  organic_log_extra: string; // JSON
   with_comment_filter_words: boolean;
 }
 
@@ -59,13 +59,13 @@ export interface TikTokMediaData {
   id: string;
   region: string;
   title: string;
-  content_desc: string[];
+  content_desc: Array<string>;
   cover: string;
-  duration: number; // У фото = 0
+  duration: number;
   play: string;
   wmplay: string;
   hdplay: string;
-  size: number; // У фото = 0
+  size: number;
   wm_size: number;
   hd_size: number;
   music: string;
@@ -77,7 +77,7 @@ export interface TikTokMediaData {
   download_count: number;
   collect_count: number;
   create_time: number;
-  anchors: Anchor[] | null; // ⚠️ Для фото-постов часто приходит null
+  anchors: Anchor[] | null;
   anchors_extras: string;
   is_ad: boolean;
   commerce_info: CommerceInfo;
@@ -85,7 +85,7 @@ export interface TikTokMediaData {
   item_comment_settings: number;
   mentioned_users: string;
   author: Author;
-  images?: string[]; // ⚠️ Присутствует только в фото-каруселях
+  images?: Array<string>;
 }
 
 export interface TikTokApiResponse {

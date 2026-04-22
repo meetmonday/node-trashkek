@@ -11,13 +11,13 @@ export interface Comment {
   login: string;          // Никнейм пользователя
   avatar: string;         // Идентификатор аватара
   posted: string;         // Unix-таймстемп в виде строки
-  br: string;             // Флаг (вероятно, "0"/"1")
-  medal_id: string;       // ID медали
-  good_medals: string;    // Количество "+" (строка)
-  bad_medals: string;     // Количество "-" (строка)
-  votes: string;          // Общий рейтинг (может быть отрицательным, строка)
-  votes0: string;         // Голоса "против" (строка)
-  votes1: string;         // Голоса "за" (строка)
-  elite: string;          // Флаг элиты
-  elite2: string;         // Доп. флаг элиты
+  br: string;             // Прикол
+  medal_id: string;       // ID ачивки
+  good_medals: string;    // Количество синих ач (строка)
+  bad_medals: string;     // Количество красных ач (строка)
+  votes: string;          // Общий рейтинг камента
+  votes0: string;         // Минусы (строка)
+  votes1: string;         // Плюсы (строка)
+  elite: string;          // Флаг элиты (не используется)
+  elite2: string;         // Доп. флаг элиты (не используется)
 }

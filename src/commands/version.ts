@@ -6,7 +6,7 @@ import type { BotType } from '..';
  * Gets the current git commit hash.
  * @returns {string|null} Short commit hash or null if not available.
  */
-function getCurrentCommitHash() {
+function getCurrentCommitHash(): string|null {
   try {
     return execSync('git rev-parse --short=7 HEAD').toString().trim();
   } catch (error) {
@@ -23,7 +23,7 @@ async function getCommitHistory(): Promise<Array<string>> {
   try {
     const response = await fetch(`https://api.github.com/repos/meetmonday/node-trashkek/commits`);
     const data = await response.json();
-    return data as string[];
+    return data as Array<string>;
   } catch (err) {
     if (err instanceof Error) {
       console.error(err.message);
@@ -35,13 +35,13 @@ async function getCommitHistory(): Promise<Array<string>> {
 /**
  * Generates a changelog from recent commits.
  * @param {number} numEntries - Number of entries to include.
- * @returns {Promise<Array|null>} Array of changelog entries or null.
+ * @returns {Promise<Array<string>>} Array of changelog entries or null.
  */
-async function generateChangelog(numEntries: number) {
+async function generateChangelog(numEntries: number): Promise<Array<string>> {
   const commitHistory = await getCommitHistory();
   if (!commitHistory) {
     console.error('Failed to retrieve commit history. Changelog generation aborted.');
-    return null;
+    return ['Failed to retrieve commit history.'];
   }
 
   const currentCommitHash = getCurrentCommitHash();
@@ -58,7 +58,7 @@ async function generateChangelog(numEntries: number) {
  * Handler for version command.
  * @param {Object} ctx - Telegraf context object.
  */
-const getVersion = async (ctx: any) => {
+const getVersion = async (ctx: any): Promise<void> => {
   const numEntries = ctx.args || 7;
 
   try {
