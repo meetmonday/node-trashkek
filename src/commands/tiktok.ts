@@ -20,17 +20,20 @@ async function main(ctx: any) {
   }
 
   const { data } = await response.json() as TikTokApiResponse;
+  if(data === undefined) {
+    await ctx.reply("Видео не найдено или ссылка некорректная");
+    return;
+  }
 
   const caption = `👨‍🦰${data.author.nickname}\n❤️${data.digg_count} 👁${data.play_count}\n${data.title}`;
 
   if (data.images) {
     // Handle images
     ctx.sendChatAction('upload_photo');
-    const mediaGroup = data.images.map((b, idx) => MediaInput.photo(
-      b, { caption: idx === 0 ? caption : undefined }
-    ));
 
-    await ctx.sendMediaGroup(mediaGroup)
+    await ctx.sendMediaGroup(data.images.map((b, idx) => MediaInput.photo(
+      b, { caption: idx === 0 ? caption : undefined }
+    )));
 
     await sendAudioFromUrl(ctx, data.play, 'audio.mp3', {
       performer: data.music_info.author,

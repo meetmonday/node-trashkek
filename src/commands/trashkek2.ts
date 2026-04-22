@@ -29,6 +29,10 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
     topicId = parseInt(/<trashTopicId>(\d+)<\/trashTopicId>/.exec(data)?.[1] ?? "0", 10);
   }
 
+  if (topicId === 0) {
+    throw new Error("Некорректная ссылка или топик не найден");
+  }
+
   return {
     topicId,
     commentId,
@@ -39,7 +43,21 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
 
 async function main(ctx: any): Promise<void> {
   const url = ctx.text;
-  const { topicId, commentId, host } = await parseUrl(url);
+  let topicId: number;
+  let commentId: number;
+  let host: string;
+  try {
+    const result = await parseUrl(url);
+    topicId = result.topicId;
+    commentId = result.commentId;
+    host = result.host;
+  } 
+  catch (err) {
+    if (err instanceof Error) {
+      ctx.reply(err.message);
+    }
+    return;
+  }
 
 
   const res = await fetch(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
