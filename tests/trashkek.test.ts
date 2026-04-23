@@ -53,4 +53,16 @@ describe("Trashkek Command", () => {
     expect(env.apiCalls[0].method).toBe("sendMessage");
     expect(env.apiCalls[0].response.text).toBe("Некорректная ссылка или топик не найден");
   });
+
+  it("send error for invalid domain", async () => {
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+
+    const env = new TelegramTestEnvironment(bot);
+    const user = env.createUser({ first_name: "Yehor" });
+
+    await user.sendMessage("https://zalupa.ru/link/nasral#div_comment_1426006");
+
+    expect(env.apiCalls[0].method).toBe("sendMessage");
+    expect(env.apiCalls[0].response.text).toBe("Некорректная ссылка");
+  });
 });

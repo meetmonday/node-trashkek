@@ -7,6 +7,8 @@ import timeAgo from "@/helpers/timeAgo";
 import type { BotType } from "..";
 import type { Comment, CommentsResponse } from "@/types/trashkek";
 
+const ACCEPTED_DOMAINS = ['trashbox.ru', 'redspecial.ru'];
+
 async function parseUrl(url: string): Promise<{ topicId: number; commentId: number; host: string; }> {
   const u: URL = new URL(url);
   const pathParts: Array<string> = u.pathname.split("/").filter(Boolean);
@@ -15,7 +17,7 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
   let topicId: number = 0;
   let commentId: number = parseInt(u.hash.split("_")[2] ?? "0", 10);
 
-  if (pathParts.length < 2 || commentId === 0) {
+  if (pathParts.length < 2 || commentId === 0 || !ACCEPTED_DOMAINS.includes(host)) {
     throw new Error("Некорректная ссылка");
   }
 
