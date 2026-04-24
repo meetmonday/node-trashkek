@@ -1,4 +1,3 @@
-version: '3.4'
 services:
   application:
     container_name: trashkek_application

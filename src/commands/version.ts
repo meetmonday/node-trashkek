@@ -10,8 +10,8 @@ function getCurrentCommitHash(): string|null {
   try {
     return execSync('git rev-parse --short=7 HEAD').toString().trim();
   } catch (error) {
-    console.debug('GIT NOT AVAILABLE, USING ENVIRONMENT VARIABLE');
-    return process.env.GIT_HASH || null;
+    console.log('GIT NOT AVAILABLE, USING ENVIRONMENT VARIABLE');
+    return process.env.GIT_HASH?.slice(0, 7) || null;
   }
 }
 
