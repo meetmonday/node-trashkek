@@ -1,8 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
-import rand from '@/helpers/rand'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 const JOBS = [
   'вынес мусор 🗑️', 'покормил кота 🐱', 'помыл посуду 🍽️',
@@ -32,14 +31,16 @@ export default (bot: BotType) =>
         }
       }
 
-      const amount = rand(1, 20)
+      const amount = bipbank.getWorkAmount()
       const job = JOBS[Math.floor(Math.random() * JOBS.length)]
 
       bipbank.deposit(userId, amount, 'work', job)
       bipbank.updateUser(userId, { last_work: String(Date.now()) })
 
       const name = ctx.from?.first_name || ctx.from?.username || `user${userId}`
-      await ctx.reply(format`💼 ${bold(name)} ${job} и заработал ${bold(String(amount))} бипок!`)
+      const coeff = bipbank.stabilizerCoeff
+      const econNote = coeff !== 1.0 ? `\n📊 Экономика ×${coeff.toFixed(2)}` : ''
+      await ctx.reply(format`💼 ${bold(name)} ${job} и заработал ${bold(String(amount))} ${pluralizeBipki(amount)}!${econNote}`)
     } catch {
       await ctx.reply('Ошибка').catch(() => {})
     }

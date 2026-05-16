@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 function findLastAmount(parts: string[]): { idx: number; amount: number } | null {
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -84,9 +84,9 @@ export default (bot: BotType) =>
 
       const parts: any[] = []
       if (comment) {
-        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} бипок\n📝 "${comment}"`)
+        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}\n📝 "${comment}"`)
       } else {
-        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} бипок`)
+        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}`)
       }
       if (r.fee > 0)
         parts.push(format`\n🔥 Комиссия ${bold(String(r.fee))} сгорела`)

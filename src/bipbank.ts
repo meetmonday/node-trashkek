@@ -1,5 +1,6 @@
 import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync } from 'fs'
+import rand from '@/helpers/rand'
 
 const DB_PATH = process.env.BIPKI_DB_PATH || 'data/bipki.db'
 
@@ -11,6 +12,7 @@ export type TxType =
   | 'work'
   | 'admin'
   | 'fee'
+  | 'gambled'
 
 export interface UserRow {
   user_id: number
@@ -56,11 +58,13 @@ export interface RainDistributeResult {
 export interface EconomyStats {
   totalSupply: number
   userCount: number
+  activeUsers: number
   totalTransactions: number
   totalEarnedWork: number
   totalEarnedDaily: number
   totalBurned: number
   totalTransferred: number
+  totalGambled: number
 }
 
 export class BipBank {
@@ -79,6 +83,39 @@ export class BipBank {
     this.db.run('PRAGMA foreign_keys=ON')
     this.initTables()
     this.migrate()
+  }
+
+  private _stabilizerCoeff = 1.0
+  private _lastStabilizerAt = 0
+  private readonly _stabilizerInterval = 21_600_000
+
+  private _recalcStabilizer(): void {
+    const s = this.economyStats()
+    const activeUsers = s.activeUsers || 0
+    const inactiveUsers = Math.max(0, s.userCount - activeUsers)
+    const targetSupply = 2000 * Math.max(1, activeUsers) + 500 * inactiveUsers
+    const total = s.userCount > 0 ? s.totalSupply : 0
+    const ratio = total / targetSupply - 1
+    this._stabilizerCoeff = Math.max(0.5, Math.min(1.5, 1.0 - ratio))
+    this._lastStabilizerAt = Date.now()
+  }
+
+  get stabilizerCoeff(): number {
+    if (Date.now() - this._lastStabilizerAt > this._stabilizerInterval) {
+      this._recalcStabilizer()
+    }
+    return this._stabilizerCoeff
+  }
+
+  getWorkAmount(): number {
+    const base = rand(5, 40)
+    return Math.max(1, Math.round(base * this.stabilizerCoeff))
+  }
+
+  getDailyBaseAmount(streak: number): number {
+    const BASE_FLAT = 10
+    const STREAK_BONUS = [0, 10, 25, 35, 50, 60, 75]
+    return Math.max(1, Math.round(BASE_FLAT * this.stabilizerCoeff)) + STREAK_BONUS[Math.min(streak, 7) - 1]!
   }
 
   private initTables(): void {
@@ -318,11 +355,17 @@ export class BipBank {
       SELECT
         (SELECT COALESCE(SUM(balance), 0) FROM users) as totalSupply,
         (SELECT COUNT(*) FROM users) as userCount,
+        (SELECT COUNT(DISTINCT user_id) FROM (
+          SELECT from_user_id AS user_id FROM transactions WHERE created_at > datetime('now', '-7 days') AND from_user_id IS NOT NULL
+          UNION
+          SELECT to_user_id AS user_id FROM transactions WHERE created_at > datetime('now', '-7 days') AND to_user_id IS NOT NULL
+        )) as activeUsers,
         (SELECT COUNT(*) FROM transactions) as totalTransactions,
         (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'work' AND to_user_id IS NOT NULL) as totalEarnedWork,
         (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'daily' AND to_user_id IS NOT NULL) as totalEarnedDaily,
         (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type IN ('burn', 'fee')) as totalBurned,
-        (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'transfer') as totalTransferred
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'transfer') as totalTransferred,
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'gambled' AND from_user_id IS NOT NULL) as totalGambled
     `).get() as EconomyStats
     return row
   }

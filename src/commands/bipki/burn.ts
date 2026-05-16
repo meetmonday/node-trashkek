@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 export default (bot: BotType) =>
   bot.command("burn", async (ctx: any) => {
@@ -25,7 +25,7 @@ export default (bot: BotType) =>
       const user = bipbank.getUser(userId)
       const name = ctx.from?.first_name || ctx.from?.username || `user${userId}`
 
-      await ctx.reply(format`🔥 ${bold(name)} испарил ${bold(String(amount))} бипок!\n💀 Всего сожжено: ${bold(String(user.total_burned))}`)
+      await ctx.reply(format`🔥 ${bold(name)} испарил ${bold(String(amount))} ${pluralizeBipki(amount)}!\n💀 Всего сожжено: ${bold(String(user.total_burned))}`)
     } catch (e: any) {
       const msg =
         e?.message === 'Insufficient balance'

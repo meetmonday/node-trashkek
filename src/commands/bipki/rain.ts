@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 export default (bot: BotType) =>
   bot.command("rain", async (ctx: any) => {
@@ -28,7 +28,7 @@ export default (bot: BotType) =>
       const pool = amount - fee
 
       if (pool < 3) {
-        await ctx.reply('🌧 Минимальная сумма для дождя — 4 бипки')
+        await ctx.reply(`🌧 Минимальная сумма для дождя — 4 ${pluralizeBipki(4)}`)
         return
       }
 

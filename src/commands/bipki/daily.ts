@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 const BASE = [10, 20, 35, 45, 60, 70, 85]
 
@@ -54,7 +54,7 @@ export default (bot: BotType) =>
 
       const streak =
         user.last_daily === yesterdayUTC() ? user.streak + 1 : 1
-      const base = BASE[Math.min(streak, 7) - 1]!
+      const base = bipbank.getDailyBaseAmount(streak)
       const bonus = roll()
       const total = base + bonus
 
@@ -66,7 +66,9 @@ export default (bot: BotType) =>
         const e = bonus >= 85 ? '💥' : bonus >= 45 ? '✨' : '🌟'
         parts.push(format` + ${e}${bold(String(bonus))}`)
       }
-      parts.push(format` = ${bold(String(total))} бипок! (Streak: ${String(streak)})`)
+      parts.push(format` = ${bold(String(total))} ${pluralizeBipki(total)}! (Streak: ${String(streak)})`)
+      const coeff = bipbank.stabilizerCoeff
+      if (coeff !== 1.0) parts.push(format`\n📊 Экономика ×${coeff.toFixed(2)}`)
 
       await ctx.reply(join(parts, ''))
     } catch {

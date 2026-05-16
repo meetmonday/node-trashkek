@@ -17,6 +17,8 @@ src/
     ├── burn.ts                 ← /burn N
     ├── rain.ts                 ← /rain N
     ├── top.ts                  ← /top, /globaltop
+    ├── coinflip.ts             ← /coinflip N (мультиплеер на инлайн-кнопках)
+    ├── economy.ts              ← /economy
     ├── history.ts              ← /history [N]
     └── help.ts                 ← /bipkiHelp
 ```
@@ -52,7 +54,7 @@ bipbank.withdraw(from: number, amount: number, type: TxType, description?: strin
 - `deposit` — всегда успешно, кидает ошибку если `amount <= 0`.
 - `withdraw` — возвращает `false` если не хватает баланса.
 
-`TxType` — строка: `'daily' | 'transfer' | 'burn' | 'rain' | 'work' | 'admin' | 'fee'`.
+`TxType` — строка: `'daily' | 'transfer' | 'burn' | 'rain' | 'work' | 'admin' | 'fee' | 'gambled'`.
 
 ### Перевод с комиссией
 
@@ -152,13 +154,43 @@ bipbank.economyStats(): EconomyStats
 interface EconomyStats {
   totalSupply: number        // SUM(balance)
   userCount: number          // COUNT(users)
+  activeUsers: number        // COUNT(DISTINCT user_id in tx last 7d)
   totalTransactions: number  // COUNT(transactions)
   totalEarnedWork: number    // SUM work-депозитов
   totalEarnedDaily: number   // SUM daily-депозитов
   totalBurned: number        // SUM type IN ('burn', 'fee')
   totalTransferred: number   // SUM type='transfer'
+  totalGambled: number       // SUM type='gambled' (только ставки)
 }
 ```
+
+### Стабилизатор экономики
+
+Автоматически регулирует выплаты `/work` и `/daily` в зависимости от `totalSupply`.
+
+```ts
+bipbank.stabilizerCoeff: number       // текущий коэффициент [0.5, 1.5]
+bipbank.getWorkAmount(): number       // max(1, round(rand(5,40) * coeff))
+bipbank.getDailyBaseAmount(streak): number  // round(10 * coeff) + STREAK_BONUS[streak]
+```
+
+Формула:
+```
+activeUsers = COUNT(DISTINCT user_id в транзакциях за 7 дней)
+inactiveUsers = totalUsers - activeUsers
+targetSupply = 2000 × max(1, activeUsers) + 500 × inactiveUsers
+ratio = totalSupply / targetSupply - 1
+coeff = clamp(1.0 - ratio, 0.5, 1.5)    // пересчёт раз в 6ч
+```
+
+Правила:
+- **activeUsers** — кто делал хоть одну транзакцию за 7 дней, остальные — inactive (меньший вес в target)
+- **Streak bonus** не режется коэффициентом: `round(10 × coeff) + streakBonus[streak]`
+- При coeff ≠ 1 команды `/work` и `/daily` показывают уведомление `📊 Экономика ×0.xx`
+- Максимум: `Math.max(1, round(...))` — защита от нуля
+
+- Мало денег в экономике → `coeff > 1` (стимуляция)
+- Много денег → `coeff < 1` (аустер)
 
 ### Чат-участники
 
@@ -183,25 +215,28 @@ DELETE из всех таблиц. Используется в тестах ме
 ## Команды
 
 | Команда | Описание |
-|---|---|
+|---|---|---|
 | `/bipki [@user \| reply \| ID]` | Баланс (свой, по @username, reply, числовому ID) |
 | `/daily` | Ежедневный бонус со streak и рандом-бонусом |
+| `/coinflip N` | Создать мультиплеерную монетку. Инлайн-кнопки 🦅/🌿/🏁. Выигрыш: N × 1.95, проигрыш: N сгорает |
 | `/transfer @user N [comment] \| N (reply)` | Перевод с комиссией 5%, опциональный комментарий |
-| `/work` | Заработать 5–50 бипок (кулдаун 2ч) |
+| `/work` | Заработать 5–40 бипок (кулдаун 2ч, сумма зависит от стабилизатора) |
 | `/burn N` | Сжечь бипки |
 | `/rain N` | Дождь в чате — 5% сгорает, остаток 3–5 случайным |
 | `/top` | Топ чата (username если есть, иначе userID). В личке — silent |
 | `/globaltop` | Глобальный топ (маскированный ID: `****6789`) |
-| `/history [N]` | Последние N операций (default 5, max 20) |
+| `/economy` | Статистика экономики + коэффициент стабилизатора |
+| `/history [N]` | Последние N операций (default 5, max 20, время относительное) |
 | `/bipkiHelp` | Справка по всем командам |
 
 ### /daily — механика
 
 ```python
-# База прогрессии (по дню streak, day = min(streak, 7)):
-[10, 20, 35, 45, 60, 70, 85]
+# База (день 1 = 10, каждый день стрика = фиксированный бонус):
+База: 10 (умножается на stabilizerCoeff)
+Бонус стрика: [0, 10, 25, 35, 50, 60, 75]
 
-# Рандом-бонус поверх базы:
+# Рандом-бонус поверх базы + бонуса стрика:
 +5   — 50%
 +25  — 35%
 +45  — 10%
@@ -212,6 +247,24 @@ DELETE из всех таблиц. Используется в тестах ме
 - Streak увеличивается если `last_daily === вчера (UTC)`. Иначе сброс на 1.
 - Повторный `/daily` в тот же день — одно сообщение, затем silent ignore.
 - Сброс дня — по UTC (0:00).
+- Коэффициент стабилизатора применяется только к базе (10), streak bonus не режется.
+
+### /coinflip — мультиплеерная монетка
+
+```
+Команда: /coinflip N (создать игру со ставкой N)
+Игра: инлайн-кнопки 🦅 Орёл / 🌿 Решка / 🏁 Закрыть
+Ставка: N (фиксированная для всех игроков)
+Выигрыш (50%): N × 1.95 (округление вверх)
+Проигрыш (50%): N сгорает
+House edge: 2.5%
+```
+
+- Игра создаётся в сообщении с кнопками. Любой участник чата может нажать кнопку и сыграть.
+- Закрыть игру может только создатель (кнопка 🏁).
+- После каждого хода сообщение обновляется: в лог (последние 5, сверху вниз) добавляется запись с ✅/❌.
+- Алерт показывает: выбор → результат → ВЫИГРАЛ/ПРОИГРАЛ + текущий баланс.
+- Игры хранятся в памяти (`Map`), теряются при рестарте бота — к БД бипковой экономики отношения не имеют.
 
 ### /transfer — комиссия
 
@@ -224,6 +277,21 @@ DELETE из всех таблиц. Используется в тестах ме
 При N = 1 комиссия не взимается.
 
 Комментарий: `/transfer @user 100 za pizza` — последнее число = сумма, всё после = комментарий (показывается в ответе).
+
+### Стабилизатор — коэффициенты
+
+Встроен в `BipBank`. Автоматически регулирует `/work` и `/daily`:
+
+```
+targetSupply = 2000 × userCount
+ratio = (totalSupply - targetSupply) / targetSupply
+coeff = clamp(1.0 - ratio, 0.5, 1.5)    // пересчёт раз в час
+```
+
+- `getWorkAmount()` — `Math.round(rand(5, 40) * coeff)`
+- `getDailyBaseAmount(streak)` — `Math.round(BASE[streak] * coeff)`
+
+Прозрачно: `/economy` показывает текущий коэффициент.
 
 ### /rain — распределение
 
@@ -335,9 +403,18 @@ try {
   // недостаточно баланса
 }
 
+// Кэфф стабилизатора
+const coeff = bipbank.stabilizerCoeff
+
+// Работа с учётом стабилизатора
+bipbank.deposit(userId, bipbank.getWorkAmount(), 'work', 'убрался')
+
+// Daily с учётом стабилизатора
+const dailyAmount = bipbank.getDailyBaseAmount(streak)
+
 // Статистика экономики
 const stats = bipbank.economyStats()
-console.log(stats.totalBurned)
+console.log(stats.totalBurned, stats.totalGambled)
 ```
 
 ### Типы
@@ -366,7 +443,7 @@ import type {
 ## Тесты
 
 ```
-bun test tests/bipki.test.ts   — 27 тестов
+bun test tests/bipki.test.ts   — 39 тестов
 bun test tests/                — все 36 тестов
 ```
 

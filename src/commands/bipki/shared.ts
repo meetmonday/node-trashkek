@@ -7,3 +7,13 @@ export function ensureBipkiUser(ctx: any): number | null {
   bipbank.setUsername(userId, ctx.from?.username || null)
   return userId
 }
+
+export function pluralizeBipki(n: number): string {
+  const abs = Math.abs(n)
+  const lastTwo = abs % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return 'бипок'
+  const last = abs % 10
+  if (last === 1) return 'бипка'
+  if (last >= 2 && last <= 4) return 'бипки'
+  return 'бипок'
+}

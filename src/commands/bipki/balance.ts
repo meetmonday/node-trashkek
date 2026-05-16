@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/bipbank'
 import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import { ensureBipkiUser, pluralizeBipki } from './shared'
 
 export default (bot: BotType) =>
   bot.command("bipki", async (ctx: any) => {
@@ -55,7 +55,7 @@ export default (bot: BotType) =>
       const user = bipbank.getUser(targetId)
 
       const parts = [
-        format`🅱️ Баланс ${bold(targetName)}: ${bold(String(user.balance))} бипок`,
+        format`🅱️ Баланс ${bold(targetName)}: ${bold(String(user.balance))} ${pluralizeBipki(user.balance)}`,
       ]
       if (targetId === userId && user.streak > 0)
         parts.push(format`\n📅 Streak: ${bold(String(user.streak))} дн.`)
