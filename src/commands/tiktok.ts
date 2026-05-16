@@ -1,5 +1,4 @@
-import { MediaUpload, MediaInput } from 'gramio';
-import { sendAudioFromUrl } from '@/helpers/tomp3.ts';
+import { MediaUpload, MediaInput, MessageContext } from 'gramio';
 
 import type { TikTokApiResponse } from '@/types/tiktok';
 import type { BotType } from '..';
@@ -8,10 +7,9 @@ import type { BotType } from '..';
  * Handles TikTok video/image download and sends to user.
  * @param {any} ctx - Context object.
  */
-async function main(ctx: any) {
+async function main(ctx: MessageContext<BotType>) {
   try {
     const url = ctx.text;
-
     const response = await fetch('https://www.tikwm.com/api/',
       { method: 'POST', body: JSON.stringify({ url, hd: 1 }) }
     );
@@ -35,15 +33,16 @@ async function main(ctx: any) {
         b, { caption: idx === 0 ? caption : undefined }
       )));
 
-      await sendAudioFromUrl(ctx, data.play, 'audio.mp3', {
+      await ctx.sendAudio(await MediaUpload.url(data.play), {
         performer: data.music_info.author,
         title: data.music_info.title,
       });
+
     } else {
       ctx.sendChatAction('upload_video');
       await ctx.sendVideo(await MediaUpload.url(data.play),
         {
-          thumbnail: MediaUpload.url(data.cover),
+          thumbnail: await MediaUpload.url(data.cover),
           duration: data.duration,
           supports_streaming: true,
           caption
