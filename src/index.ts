@@ -18,7 +18,7 @@ const bot = new Bot(token)
     }),
   )
   .extend(autoRetry())
-  .extend(await autoload())
+  .extend(await autoload({ picomatch: { ignore: ["**/shared.ts"] } }))
   .onStart(({ info }) => console.log(`Running as @${info.username}`));
 
 bot.start();

@@ -7,7 +7,7 @@ import { autoload } from "@gramio/autoload";
 
 describe("Trashkek Command", () => {
   it("parse valid link", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -19,7 +19,7 @@ describe("Trashkek Command", () => {
   });
 
   it("parse valid /topics/ link", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -31,7 +31,7 @@ describe("Trashkek Command", () => {
   });
 
   it("send error for link without comment_id", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -43,7 +43,7 @@ describe("Trashkek Command", () => {
   });
 
   it("send error for invalid topic", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -55,7 +55,7 @@ describe("Trashkek Command", () => {
   });
 
   it("send error for invalid domain", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });

@@ -11,7 +11,7 @@ console.error = (...args) => {};
 
 describe("My bot", () => {
   it("send video from tiktok link", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -24,7 +24,7 @@ describe("My bot", () => {
   });
 
   it("send photo from tiktok link", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
@@ -37,7 +37,7 @@ describe("My bot", () => {
   });
 
   it("send error if link is invalid", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });

@@ -7,7 +7,7 @@ import { autoload } from "@gramio/autoload";
 
 describe("My bot", () => {
   it("reply to /ver", async () => {
-    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }));
 
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });

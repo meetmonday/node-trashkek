@@ -7,3 +7,4 @@ npm-debug.log
 docker-compose.yaml
 Makefile
 tests
+data

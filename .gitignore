@@ -63,6 +63,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Database
+data/
+
 # Original rules preserved
 *.log
 ```
