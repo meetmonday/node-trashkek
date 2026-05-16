@@ -3,7 +3,13 @@ import { autoload } from "@gramio/autoload";
 import { autoRetry } from "@gramio/auto-retry";
 import { rateLimit } from "@gramio/rate-limit";
 
-const bot = new Bot(process.env.BOT_TOKEN as string)
+const token = process.env.BOT_TOKEN;
+if (!token) {
+  console.error('BOT_TOKEN is not set');
+  process.exit(1);
+}
+
+const bot = new Bot(token)
   .extend(
     rateLimit({
       onLimitExceeded: async (ctx) => {

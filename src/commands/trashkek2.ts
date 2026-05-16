@@ -25,8 +25,11 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
     topicId = parseInt(pathParts[1]!, 10);
   }
   else if (pathParts[0] === 'link') {
+    if (!/^[a-zA-Z0-9_-]+$/.test(pathParts[1]!)) {
+      throw new Error("Некорректная ссылка");
+    }
     const res = await fetch(`https://${host}/api_topics/${pathParts[1]}`);
-    if (!res.ok) throw new Error(`Апи топиков: ЛИКВИДИРОВАНО: ${res.status}`);
+    if (!res.ok) throw new Error('Апи топиков: ошибка');
     const data = await res.text();
     topicId = parseInt(/<trashTopicId>(\d+)<\/trashTopicId>/.exec(data)?.[1] ?? "0", 10);
   }
@@ -63,7 +66,7 @@ async function main(ctx: any): Promise<void> {
 
 
   const res = await fetch(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
-  if (!res.ok) throw new Error(`Апи каментов: ЛИКВИДИРОВАНО: ${res.status}`);
+  if (!res.ok) throw new Error('Апи каментов: ошибка');
   const data = await res.json() as CommentsResponse;
   const comment = data.comments.find((c: Comment) => parseInt(c.comm_id, 10) === commentId);
   if (!comment) {

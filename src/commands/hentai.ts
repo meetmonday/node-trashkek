@@ -59,12 +59,12 @@ const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE
     try {
       await ctx.sendMediaGroup(photos);
     } 
-    catch (err) {
-      ctx.reply(`Ошибка отправки: ${(err as Error).message}`);
+    catch {
+      ctx.reply('Ошибка отправки медиа');
     }
   } 
-  catch (err) {
-    ctx.reply(`Ошибка: ${(err as Error).message}`);
+  catch {
+    ctx.reply('Ошибка поиска');
   }
 };
 

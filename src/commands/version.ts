@@ -1,5 +1,3 @@
-import { execSync } from 'child_process';
-
 import type { BotType } from '..';
 
 /**
@@ -7,12 +5,7 @@ import type { BotType } from '..';
  * @returns {string|null} Short commit hash or null if not available.
  */
 function getCurrentCommitHash(): string|null {
-  try {
-    return execSync('git rev-parse --short=7 HEAD').toString().trim();
-  } catch (error) {
-    console.log('GIT NOT AVAILABLE, USING ENVIRONMENT VARIABLE');
-    return process.env.GIT_HASH?.slice(0, 7) || null;
-  }
+  return process.env.GIT_HASH?.slice(0, 7) || null;
 }
 
 /**
@@ -59,7 +52,7 @@ async function generateChangelog(numEntries: number): Promise<Array<string>> {
  * @param {Object} ctx - Telegraf context object.
  */
 const getVersion = async (ctx: any): Promise<void> => {
-  const numEntries = ctx.args || 7;
+  const numEntries = Math.min(Math.max(parseInt(ctx.args, 10) || 7, 1), 20);
 
   try {
     const changelog = await generateChangelog(numEntries);
