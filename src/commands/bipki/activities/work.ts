@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
 const JOBS = [
   'вынес мусор 🗑️', 'покормил кота 🐱', 'помыл посуду 🍽️',

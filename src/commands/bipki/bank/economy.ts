@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser } from '@/helpers/shared'
 
 export default (bot: BotType) =>
   bot.command("economy", async (ctx: any) => {

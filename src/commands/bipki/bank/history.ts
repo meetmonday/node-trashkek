@@ -1,8 +1,8 @@
 import { format, bold, join } from 'gramio'
 import { bipbank, type TransactionRow } from '@/bipbank'
 import timeAgo from '@/helpers/timeAgo'
-import type { BotType } from '../..'
-import { ensureBipkiUser } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser } from '@/helpers/shared'
 
 const EMOJI: Record<string, string> = {
   daily: '🎁', transfer: '💸', burn: '🔥',

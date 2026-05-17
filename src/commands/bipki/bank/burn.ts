@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
 export default (bot: BotType) =>
   bot.command("burn", async (ctx: any) => {

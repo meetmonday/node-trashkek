@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
 const BASE = [10, 20, 35, 45, 60, 70, 85]
 

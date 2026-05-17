@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
 function findLastAmount(parts: string[]): { idx: number; amount: number } | null {
   for (let i = parts.length - 1; i >= 0; i--) {

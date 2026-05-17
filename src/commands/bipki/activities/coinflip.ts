@@ -1,6 +1,6 @@
 import { bipbank } from '@/bipbank'
-import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from './shared'
+import type { BotType } from '../../..'
+import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
 interface CoinflipLogEntry {
   userId: number

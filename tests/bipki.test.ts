@@ -5,6 +5,7 @@ import { TelegramTestEnvironment } from "@gramio/test"
 import { autoload } from "@gramio/autoload"
 
 process.env.BIPKI_DB_PATH = ':memory:'
+process.env.ADMIN_IDS = '1'
 
 function textOf(call: any): string {
   const t = call?.params?.text
@@ -458,6 +459,77 @@ describe("Bipki Commands", () => {
       expect(stats.totalBurned).toBeGreaterThan(0)
       expect(stats.totalTransferred).toBeGreaterThan(0)
       expect(stats.totalGambled).toBeGreaterThan(0)
+    })
+  })
+
+  // ── /admin ──────────────────────────────────────────────────────
+  describe("/admin", () => {
+    it("rejects non-admin", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 999, first_name: "Hacker" })
+      await user.sendCommand("admin", "@user +100")
+      expect(textOf(env.apiCalls[0])).toContain("Ты не админ")
+    })
+
+    it("shows format hint when args missing", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      await user.sendCommand("admin")
+      expect(textOf(env.apiCalls[0])).toContain("Формат")
+    })
+
+    it("deposits by @mention", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin", username: "admin_u" })
+      bipbank.setUsername(60, "target_a")
+      await user.sendCommand("admin", "@target_a +100 za test")
+      expect(textOf(env.apiCalls[0])).toContain("начислил")
+      expect(textOf(env.apiCalls[0])).toContain("100")
+      expect(textOf(env.apiCalls[0])).toContain("za test")
+      expect(bipbank.balance(60)).toBe(100)
+    })
+
+    it("withdraws by @mention", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      bipbank.setUsername(61, "target_b")
+      bipbank.deposit(61, 200, "admin", "seed")
+      await user.sendCommand("admin", "@target_b -50 shtraf")
+      expect(textOf(env.apiCalls[0])).toContain("списал")
+      expect(textOf(env.apiCalls[0])).toContain("50")
+      expect(textOf(env.apiCalls[0])).toContain("shtraf")
+      expect(bipbank.balance(61)).toBe(150)
+    })
+
+    it("rejects withdraw with insufficient balance", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      bipbank.setUsername(62, "target_c")
+      await user.sendCommand("admin", "@target_c -50")
+      expect(textOf(env.apiCalls[0])).toContain("Недостаточно")
+    })
+
+    it("rejects zero amount", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      bipbank.setUsername(63, "target_d")
+      await user.sendCommand("admin", "@target_d +0")
+      expect(textOf(env.apiCalls[0])).toContain("0")
+    })
+
+    it("rejects unknown @mention", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      await user.sendCommand("admin", "@nobody +100")
+      expect(textOf(env.apiCalls[0])).toContain("не найден")
+    })
+
+    it("rejects missing amount sign", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 1, first_name: "Admin" })
+      bipbank.setUsername(64, "target_e")
+      await user.sendCommand("admin", "@target_e 100")
+      expect(textOf(env.apiCalls[0])).toContain("+/-")
     })
   })
 })
