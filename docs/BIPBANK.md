@@ -20,7 +20,8 @@ src/
     ├── coinflip.ts             ← /coinflip N (мультиплеер на инлайн-кнопках)
     ├── economy.ts              ← /economy
     ├── history.ts              ← /history [N]
-    └── help.ts                 ← /bipkiHelp
+    ├── ngbet.ts                ← /ngbet N (ставка в призовой пул NaganBet)
+    └── help.ts                 ← /bipkihelp
 ```
 
 ---
@@ -100,6 +101,48 @@ bipbank.rainDistribute(
 ```
 
 Кидает `Error('Insufficient balance')` или `Error('Recipients list is empty')`.
+
+### Призовые пулы (Pool API)
+
+Универсальная абстракция для игр с общим банком.  
+Пул создаётся по `(chat_id, pool_id)` — изолирован от других чатов и игр.
+
+```ts
+// Внести ставку (withdraw с user'а + запись в game_pools)
+bipbank.poolContribute(chatId: number, poolId: string, userId: number, amount: number): void
+
+// Вернуть все ставки в пуле (deposit каждому, очистка пула)
+bipbank.poolRefund(chatId: number, poolId: string): number
+
+// Отдать весь пул одному победителю (deposit, очистка пула)
+bipbank.poolAward(chatId: number, poolId: string, winnerId: number): number
+
+// Разделить пул между получателями (deposit каждому, очистка пула).
+// Разница между суммой пула и суммой получателей записывается как fee.
+bipbank.poolSplit(
+  chatId: number,
+  poolId: string,
+  recipients: Array<{ userId: number; amount: number }>,
+): { distributed: number; fee: number }
+
+// Текущее состояние пула
+bipbank.poolStatus(chatId: number, poolId: string): {
+  total: number
+  participants: Array<{ userId: number; amount: number }>
+} | null
+
+// Восстановить все активные пулы из БД (на старте)
+bipbank.restorePools(): Array<{
+  chatId: number; poolId: string; userId: number; amount: number
+}>
+```
+
+- `poolContribute` кидает `Error('Insufficient balance')` если не хватает.
+- `poolRefund` возвращает 0 если пул пуст.
+- `poolAward` кидает `Error('Pool is empty')` если пул пуст.
+- `poolSplit` кидает `Error('Pool is empty')` или `Error('Recipients list is empty')`.
+- `poolStatus` возвращает `null` если пул пуст.
+- Все pool-операции атомарны (внутри `db.transaction()`).
 
 ### Мета пользователя
 
@@ -208,7 +251,7 @@ bipbank.getChatUserIds(chatId: number): number[]
 bipbank.clearAll(): void
 ```
 
-DELETE из всех таблиц. Используется в тестах между кейсами.
+DELETE из всех таблиц (включая `game_pools`). Используется в тестах между кейсами.
 
 ---
 
@@ -223,6 +266,7 @@ DELETE из всех таблиц. Используется в тестах ме
 | `/work` | Заработать 5–40 бипок (кулдаун 2ч, сумма зависит от стабилизатора) |
 | `/burn N` | Сжечь бипки |
 | `/rain N` | Дождь в чате — 5% сгорает, остаток 3–5 случайным |
+| `/ngbet [N \| cancel]` | Ставка в призовой пул NaganBet. Повторные вызовы добавляют к ставке. |
 | `/top` | Топ чата (username если есть, иначе userID). В личке — silent |
 | `/globaltop` | Глобальный топ (маскированный ID: `****6789`) |
 | `/economy` | Статистика экономики + коэффициент стабилизатора |
@@ -304,6 +348,23 @@ coeff = clamp(1.0 - ratio, 0.5, 1.5)    // пересчёт раз в час
 
 Использует `bipbank.rainDistribute()` — атомарно: withdraw, deposits, fee burn в одной транзакции.
 
+### /ngbet — призовой пул NaganBet
+
+```
+Команда: /ngbet N (поставить N бипок в банк чата)
+       : /ngbet (показать свою ставку и общий банк)
+       : /ngbet cancel (вернуть все ставки в чате)
+Механика: бот мониторит сообщения @naganbot
+  — при смерти игрока (матч по 13 паттернам) извлекается @username
+    — если пользователь есть в bipki → poolAward: весь банк ему
+    — если нет → дождь: 5% сгорает, остаток 3–5 случайным участникам чата
+  — при ядерном взрыве (3 паттерна) все проиграли → дождь: 5% сгорает, остаток 3–5
+  — пул очищается
+Персистентность: ставки сохраняются в game_pools, восстанавливаются при рестарте
+```
+
+Использует `Pool API` (`poolContribute` / `poolAward` / `poolSplit` / `poolRefund`).
+
 ---
 
 ## Хелпер ensureBipkiUser
@@ -361,6 +422,14 @@ chat_users (
   user_id  INTEGER NOT NULL,
   PRIMARY KEY (chat_id, user_id)
 )
+
+game_pools (
+  chat_id INTEGER NOT NULL,        -- Telegram chat ID
+  pool_id TEXT    NOT NULL,        -- идентификатор игры ('ngbet', ...)
+  user_id INTEGER NOT NULL,        -- Telegram user ID
+  amount  INTEGER NOT NULL,        -- текущая ставка пользователя
+  PRIMARY KEY (chat_id, pool_id, user_id)
+)
 ```
 
 ### PRAGMA
@@ -402,6 +471,31 @@ try {
 } catch (e) {
   // недостаточно баланса
 }
+
+// Призовой пул
+try {
+  bipbank.poolContribute(chatId, 'ngbet', userId, 100)  // withdraw + запись
+} catch (e) {
+  // недостаточно баланса
+}
+
+// Отменить и вернуть
+const total = bipbank.poolRefund(chatId, 'ngbet')
+
+// Наградить победителя
+const pot = bipbank.poolAward(chatId, 'ngbet', winnerId)
+
+// Разделить пул (дождь)
+const { distributed, fee } = bipbank.poolSplit(chatId, 'ngbet', recipients)
+
+// Проверить состояние
+const status = bipbank.poolStatus(chatId, 'ngbet')
+if (status) {
+  console.log(status.total, status.participants.length)
+}
+
+// Восстановить пулы при старте
+const pools = bipbank.restorePools()
 
 // Кэфф стабилизатора
 const coeff = bipbank.stabilizerCoeff

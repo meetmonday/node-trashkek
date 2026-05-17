@@ -2,18 +2,18 @@ import { format, bold, join } from 'gramio'
 import type { BotType } from '../..'
 
 const COMMANDS = [
-  { cmd: '/bipki [@user]', desc: 'Баланс (свой, reply или @user)' },
-  { cmd: '/daily', desc: 'Ежедневный бонус (streak + рандом)' },
-  { cmd: '/coinflip <heads|tails> N', desc: 'Орёл/решка со ставкой (x1.95)' },
-  { cmd: '/transfer @user N [comment]', desc: 'Перевод с комиссией 5%' },
-  { cmd: '/work', desc: 'Заработать 5–40 бипок (кулдаун 2ч)' },
+  { cmd: '/bipki [@user]', desc: 'Баланс (свой или @user)' },
+  { cmd: '/daily', desc: 'Ежедневный бонус' },
+  { cmd: '/coinflip N', desc: 'Орёл/решка со ставкой)' },
+  { cmd: '/transfer @user N [comment]', desc: 'Перевод бипок' },
+  { cmd: '/work', desc: 'Заработать бипок (кулдаун 2ч)' },
   { cmd: '/burn N', desc: 'Сжечь бипки' },
   { cmd: '/rain N', desc: 'Устроить дождь в чате' },
   { cmd: '/top', desc: 'Топ чата' },
   { cmd: '/globaltop', desc: 'Глобальный топ' },
   { cmd: '/economy', desc: 'Статистика экономики' },
-  { cmd: '/history [N]', desc: 'Последние N операций (по умолч. 5)' },
-  { cmd: '/bipkiHelp', desc: 'Это сообщение' },
+  { cmd: '/history [N]', desc: 'Последние 5 операций' },
+  { cmd: '/bipkihelp', desc: 'Это сообщение' },
 ]
 
 export default (bot: BotType) =>
