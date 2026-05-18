@@ -11,13 +11,13 @@
     "booru": "^2.9.0",
     "cheerio": "^1.2.0",
     "gramio": "^0.9.0",
-    "marked": "^18.0.2",
+    "marked": "^18.0.3",
     "node-html-markdown": "^2.0.0"
   },
   "devDependencies": {
     "@gramio/test": "^0.7.0",
     "@types/bun": "latest",
-    "typescript": "6"
+    "typescript": "^6.0.3"
   },
   "private": true,
   "scripts": {

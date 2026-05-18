@@ -153,9 +153,9 @@ ${ctx.from?.first_name || ctx.from?.username || `user${userId}`} постави�
     }
   })
 
-  bot.on('message', async (ctx: any) => {
+  bot.on('message', async (ctx: any, next: any) => {
     try {
-      if(ctx.from.username !== 'naganbot' && ctx.from.username !== 'itisdj_bot') return
+      if(ctx.from.username !== 'naganbot' && ctx.from.username !== 'itisdj_bot') return next()
       const text = ctx.text || ctx.caption || ''
       const chatId = ctx.chat?.id
       if (!chatId || !text) return

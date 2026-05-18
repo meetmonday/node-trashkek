@@ -17,10 +17,8 @@ const bot = new Bot(token)
       },
     }),
   )
-  .extend(await autoRetry())
-  .extend(await autoload({
-    path: `${__dirname}/commands` // без этого почему-то не все команды работают, хз
-  }))
+  .extend(autoRetry())
+  .extend(await autoload())
   .onStart(({ info }) => console.log(`Running as @${info.username}`));
 
 bot.start();

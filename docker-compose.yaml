@@ -6,4 +6,4 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data:/usr/src/app/data
+      - ./data:/usr/src/app/data:Z
