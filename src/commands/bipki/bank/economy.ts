@@ -1,5 +1,5 @@
 import { format, bold, join } from 'gramio'
-import { bipbank } from '@/bipbank'
+import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser } from '@/helpers/shared'
 
@@ -8,7 +8,7 @@ export default (bot: BotType) =>
     try {
       ensureBipkiUser(ctx)
       const s = bipbank.economyStats()
-      const coeff = bipbank.stabilizerCoeff
+      const coeff = bipbank.stabilizer.coeff
       const items = [
         format`💰 Общий баланс: ${bold(String(s.totalSupply))}`,
         format`🔥 Сожжено: ${bold(String(s.totalBurned))}`,

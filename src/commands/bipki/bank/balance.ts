@@ -1,5 +1,5 @@
 import { format, bold, join } from 'gramio'
-import { bipbank } from '@/bipbank'
+import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 

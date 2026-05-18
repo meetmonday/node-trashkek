@@ -1,8 +1,11 @@
 import { format, link } from 'gramio';
 import { search } from 'booru';
 import rand from '@/helpers/rand';
+import { bipbank } from '@/economy';
 
 import type { BotType } from '..';
+import { ensureBipkiUser } from '@/helpers/shared';
+import { distributeRain } from './bipki/activities/rain';
 
 const DEFAULT_SITE = 'danbooru'
 
@@ -26,10 +29,10 @@ const extractSite = (input: string): { site: string; tags: string; } => {
  * Sends a random image from Danbooru.
  * @param {Object} ctx - Context object.
  */
-const random = (ctx: any) => {
+const random = async (ctx: any) => {
   const randomId = rand(0, 11191117);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
-  ctx.send(format`${link('Пикча', randomImageUrl)}`);
+  await ctx.send(format`${link('Пикча', randomImageUrl)}`);
 };
 
 /**
@@ -72,7 +75,7 @@ const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE
  * Routes hentai command requests based on arguments.
  * @param ctx - Context object.
  */
-const hentaiRouter = (ctx: any) => {
+const hentaiRouter = async (ctx: any) => {
   const payload: string = ctx.args;
   if (payload) {
     const args = extractSite(payload);
@@ -83,10 +86,23 @@ const hentaiRouter = (ctx: any) => {
       return;
     }
 
-    searchCommand(ctx, args.tags, args.site);
+    await searchCommand(ctx, args.tags, args.site);
   } 
   else {
-    random(ctx);
+    await random(ctx);
+  }
+
+  const userId = ensureBipkiUser(ctx)
+  const chatId = ctx.chat?.id
+  if (userId && chatId && ctx.chat?.type !== 'private' && rand(1, 100) >= 95) {
+    const balance = bipbank.balance(userId)
+    const amount = Math.max(4, Math.floor(balance * rand(5, 15) / 100))
+    if (balance >= amount) {
+      await distributeRain(
+        ctx, userId, chatId, amount,
+        `👀 Братану настолько понравились картинки, что он брызнул на весь чят`,
+      )
+    }
   }
 };
 

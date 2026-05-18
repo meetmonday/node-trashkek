@@ -1,4 +1,4 @@
-import { bipbank } from '@/bipbank'
+import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 

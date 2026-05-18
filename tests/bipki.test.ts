@@ -16,7 +16,7 @@ let bot: any, bipbank: any
 
 describe("Bipki Commands", () => {
   beforeAll(async () => {
-    const mod = await import("@/bipbank")
+    const mod = await import("@/economy")
     bipbank = mod.bipbank
     bot = new Bot("test").extend(
       await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }),
@@ -406,14 +406,14 @@ describe("Bipki Commands", () => {
   // ── Stabilizer ──────────────────────────────────────────────────
   describe("Economy stabilizer", () => {
     it("starts at 1.5 for empty economy (stimulation)", () => {
-      expect(bipbank.stabilizerCoeff).toBe(1.5)
+      expect(bipbank.stabilizer.coeff).toBe(1.5)
     })
 
     it("getWorkAmount returns within expected range", () => {
       bipbank.clearAll()
       bipbank.deposit(200, 1000, "admin", "test")
       for (let i = 0; i < 50; i++) {
-        const amt = bipbank.getWorkAmount()
+        const amt = bipbank.stabilizer.getWorkAmount()
         expect(amt).toBeGreaterThanOrEqual(8)
         expect(amt).toBeLessThanOrEqual(60)
       }
@@ -423,7 +423,7 @@ describe("Bipki Commands", () => {
       bipbank.clearAll()
       bipbank.deposit(210, 100, "admin", "test")
       for (let s = 1; s <= 10; s++) {
-        expect(bipbank.getDailyBaseAmount(s)).toBeGreaterThan(0)
+        expect(bipbank.stabilizer.getDailyBaseAmount(s)).toBeGreaterThan(0)
       }
     })
   })
@@ -467,14 +467,14 @@ describe("Bipki Commands", () => {
     it("rejects non-admin", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 999, first_name: "Hacker" })
-      await user.sendCommand("admin", "@user +100")
+      await user.sendCommand("bbadmin", "@user +100")
       expect(textOf(env.apiCalls[0])).toContain("Ты не админ")
     })
 
     it("shows format hint when args missing", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
-      await user.sendCommand("admin")
+      await user.sendCommand("bbadmin")
       expect(textOf(env.apiCalls[0])).toContain("Формат")
     })
 
@@ -482,7 +482,7 @@ describe("Bipki Commands", () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin", username: "admin_u" })
       bipbank.setUsername(60, "target_a")
-      await user.sendCommand("admin", "@target_a +100 za test")
+      await user.sendCommand("bbadmin", "@target_a +100 za test")
       expect(textOf(env.apiCalls[0])).toContain("начислил")
       expect(textOf(env.apiCalls[0])).toContain("100")
       expect(textOf(env.apiCalls[0])).toContain("za test")
@@ -494,7 +494,7 @@ describe("Bipki Commands", () => {
       const user = env.createUser({ id: 1, first_name: "Admin" })
       bipbank.setUsername(61, "target_b")
       bipbank.deposit(61, 200, "admin", "seed")
-      await user.sendCommand("admin", "@target_b -50 shtraf")
+      await user.sendCommand("bbadmin", "@target_b -50 shtraf")
       expect(textOf(env.apiCalls[0])).toContain("списал")
       expect(textOf(env.apiCalls[0])).toContain("50")
       expect(textOf(env.apiCalls[0])).toContain("shtraf")
@@ -505,7 +505,7 @@ describe("Bipki Commands", () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
       bipbank.setUsername(62, "target_c")
-      await user.sendCommand("admin", "@target_c -50")
+      await user.sendCommand("bbadmin", "@target_c -50")
       expect(textOf(env.apiCalls[0])).toContain("Недостаточно")
     })
 
@@ -513,14 +513,14 @@ describe("Bipki Commands", () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
       bipbank.setUsername(63, "target_d")
-      await user.sendCommand("admin", "@target_d +0")
+      await user.sendCommand("bbadmin", "@target_d +0")
       expect(textOf(env.apiCalls[0])).toContain("0")
     })
 
     it("rejects unknown @mention", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
-      await user.sendCommand("admin", "@nobody +100")
+      await user.sendCommand("bbadmin", "@nobody +100")
       expect(textOf(env.apiCalls[0])).toContain("не найден")
     })
 
@@ -528,7 +528,7 @@ describe("Bipki Commands", () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
       bipbank.setUsername(64, "target_e")
-      await user.sendCommand("admin", "@target_e 100")
+      await user.sendCommand("bbadmin", "@target_e 100")
       expect(textOf(env.apiCalls[0])).toContain("+/-")
     })
   })

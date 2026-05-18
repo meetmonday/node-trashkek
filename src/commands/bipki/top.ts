@@ -1,5 +1,5 @@
 import { format, bold, join } from 'gramio'
-import { bipbank, type TopRow } from '@/bipbank'
+import { bipbank, type TopRow } from '@/economy'
 import type { BotType } from '../..'
 
 function render(rows: TopRow[], title: string, isGlobal = false) {

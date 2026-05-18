@@ -1,4 +1,4 @@
-import { bipbank } from '@/bipbank'
+import { bipbank } from '@/economy'
 
 export function ensureBipkiUser(ctx: any): number | null {
   const userId = ctx.from?.id
