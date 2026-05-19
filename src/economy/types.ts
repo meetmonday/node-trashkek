@@ -1,104 +1,90 @@
-/** Discriminated union of all recognised transaction types. */
-export type TxType =
-  | 'daily'
-  | 'transfer'
-  | 'burn'
-  | 'rain'
-  | 'work'
-  | 'admin'
-  | 'fee'
-  | 'gambled'
+/** Numeric transaction type constants. */
+export const TX_TYPE = {
+  daily: 1,
+  transfer: 2,
+  burn: 3,
+  rain: 4,
+  work: 5,
+  admin: 6,
+  fee: 7,
+  gambled: 8,
+} as const
+
+/** Numeric transaction type (1–8). */
+export type TxType = (typeof TX_TYPE)[keyof typeof TX_TYPE]
+
+/** Reverse lookup: numeric TxType → human-readable name. */
+export function txTypeName(type: number): string {
+  return TX_TYPE_NAME[type] ?? 'unknown'
+}
+
+const TX_TYPE_NAME: Record<number, string> = {
+  [TX_TYPE.daily]: 'daily',
+  [TX_TYPE.transfer]: 'transfer',
+  [TX_TYPE.burn]: 'burn',
+  [TX_TYPE.rain]: 'rain',
+  [TX_TYPE.work]: 'work',
+  [TX_TYPE.admin]: 'admin',
+  [TX_TYPE.fee]: 'fee',
+  [TX_TYPE.gambled]: 'gambled',
+}
 
 /** Full row from the `users` table. */
 export interface UserRow {
-  /** Telegram user ID (primary key). */
   user_id: number
-  /** Current bipki balance. */
   balance: number
-  /** Consecutive `/daily` streak count. */
   streak: number
-  /** Date of last `/daily` claim (`YYYY-MM-DD`), or null. */
   last_daily: string | null
-  /** Unix-ms timestamp of last `/work`, or null. */
   last_work: string | null
-  /** Lifetime amount destroyed via burns + fees. */
   total_burned: number
-  /** @username (without @), or null. */
   username: string | null
-  /** Row creation timestamp. */
   created_at: string
-  /** Last update timestamp. */
   updated_at: string
 }
 
-/** A single row from the `transactions` table. */
+/** A single row from the `transactions` table (with resolved description). */
 export interface TransactionRow {
-  /** Auto-increment primary key. */
   id: number
-  /** Sender user ID (`null` for system/rain deposits). */
   from_user_id: number | null
-  /** Recipient user ID (`null` for withdrawals/burns). */
   to_user_id: number | null
-  /** Gross amount of the transaction. */
   amount: number
-  /** Transaction category. */
-  type: TxType
-  /** Optional human-readable reason. */
+  type: number
   description: string | null
-  /** ISO-8601 timestamp of the transaction. */
-  created_at: string
+  created_at: number
+  parent_tx_id: number | null
 }
 
 /** A row in a leaderboard result set. */
 export interface TopRow {
-  /** Telegram user ID. */
   user_id: number
-  /** Current balance. */
   balance: number
-  /** 1-based rank within the result set. */
   rank: number
-  /** @username (without @), or null. */
   username: string | null
 }
 
 /** Result of a single `transfer()` call. */
 export interface TransferResult {
-  /** Gross amount removed from the sender. */
   sent: number
-  /** Net amount credited to the recipient (sent - fee). */
   received: number
-  /** Fee burned (ceil of 5 %), 0 for micro-transfers. */
   fee: number
 }
 
 /** Result of a `rainDistribute()` call. */
 export interface RainDistributeResult {
-  /** Total amount removed from sender (recipients + fee). */
   sent: number
-  /** Amount burned as fee. */
   fee: number
-  /** The recipients list that was actually credited. */
   recipients: Array<{ userId: number; amount: number }>
 }
 
 /** Aggregate economy statistics. */
 export interface EconomyStats {
-  /** Sum of all user balances (total money supply). */
   totalSupply: number
-  /** Total number of registered users. */
   userCount: number
-  /** Distinct users with at least one transaction in the last 7 days. */
   activeUsers: number
-  /** Total transaction count across all time. */
   totalTransactions: number
-  /** Sum of all `work`-type credits. */
   totalEarnedWork: number
-  /** Sum of all `daily`-type credits. */
   totalEarnedDaily: number
-  /** Sum of transaction amounts with type `burn` or `fee` (from `transactions` table). */
   totalBurned: number
-  /** Sum of all `transfer`-type transactions. */
   totalTransferred: number
-  /** Sum of all `gambled` transactions where `from_user_id IS NOT NULL` (bets only). */
   totalGambled: number
 }

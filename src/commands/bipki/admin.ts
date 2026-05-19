@@ -1,5 +1,5 @@
 import { format, bold } from 'gramio'
-import { bipbank } from '@/economy'
+import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
 
@@ -15,7 +15,7 @@ export default (bot: BotType) =>
       if (!ADMIN_IDS.has(userId)) return
 
       if (!ctx.args) {
-        await ctx.reply('Формат: /admin {@username | reply} {+/-amount} [причина]')
+        await ctx.reply('Формат: /bbadmin {@username | reply} {+/-amount} [причина]')
         return
       }
 
@@ -69,12 +69,12 @@ export default (bot: BotType) =>
       const adminName = userName(ctx.from, userId)
 
       if (rawAmount > 0) {
-        bipbank.deposit(targetId, rawAmount, 'admin', description)
+        bipbank.deposit(targetId, rawAmount, TX_TYPE.admin, description, false)
         const msg = format`⚙️ ${bold(adminName)} начислил ${bold(String(rawAmount))} ${pluralizeBipki(rawAmount)} ${bold(targetName)}${description ? format`\n📝 "${description}"` : ''}`
         await ctx.reply(msg)
       } else {
         const absAmount = Math.abs(rawAmount)
-        if (bipbank.withdraw(targetId, absAmount, 'admin', description)) {
+        if (bipbank.withdraw(targetId, absAmount, TX_TYPE.admin, description, false)) {
           const msg = format`⚙️ ${bold(adminName)} списал ${bold(String(absAmount))} ${pluralizeBipki(absAmount)} у ${bold(targetName)}${description ? format`\n📝 "${description}"` : ''}`
           await ctx.reply(msg)
         } else {

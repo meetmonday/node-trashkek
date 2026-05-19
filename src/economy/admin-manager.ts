@@ -1,46 +1,31 @@
-import { Database } from 'bun:sqlite'
+import { TX_TYPE } from './types'
+import type { DbApi } from './sql'
 import type { TransactionRow } from './types'
 
 export class AdminManager {
   constructor(
-    private db: Database,
-    private ensureUser: (userId: number) => void,
+    private db: DbApi,
   ) {}
 
   setBalance(userId: number, amount: number, description?: string): void {
     if (amount < 0) throw new Error('Amount must be non-negative')
-    this.ensureUser(userId)
+    this.db.users.ensure(userId)
 
     this.db.transaction(() => {
-      const row = this.db.query(
-        'SELECT balance FROM users WHERE user_id = ?',
-      ).get(userId) as { balance: number } | undefined
-      const prev = row?.balance ?? 0
+      const prev = this.db.balance.of(userId)
       const diff = amount - prev
 
-      this.db.run(
-        'UPDATE users SET balance = ?, updated_at = datetime(\'now\') WHERE user_id = ?',
-        [amount, userId],
-      )
+      this.db.balance.set(userId, amount)
 
       if (diff > 0) {
-        this.db.run(
-          'INSERT INTO transactions (to_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
-          [userId, diff, 'admin', description ?? 'admin set balance'],
-        )
+        this.db.transactions.insert({ to_user_id: userId, amount: diff, type: TX_TYPE.admin, description: description ?? 'admin set balance', systemDescription: false })
       } else if (diff < 0) {
-        this.db.run(
-          'INSERT INTO transactions (from_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
-          [userId, -diff, 'admin', description ?? 'admin set balance'],
-        )
+        this.db.transactions.insert({ from_user_id: userId, amount: -diff, type: TX_TYPE.admin, description: description ?? 'admin set balance', systemDescription: false })
       }
-    })()
+    })
   }
 
   getTransactions(limit = 10): TransactionRow[] {
-    const capped = Math.min(Math.max(1, limit), 50)
-    return this.db.query(
-      `SELECT * FROM transactions WHERE type = 'admin' ORDER BY created_at DESC LIMIT ?`,
-    ).all(capped) as TransactionRow[]
+    return this.db.transactions.admin(limit)
   }
 }

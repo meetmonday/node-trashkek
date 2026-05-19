@@ -5,6 +5,8 @@ const COMMANDS = [
   { cmd: '/bipki [@user]', desc: 'Баланс (свой или @user)' },
   { cmd: '/daily', desc: 'Ежедневный бонус' },
   { cmd: '/coinflip N', desc: 'Орёл/решка со ставкой' },
+  { cmd: '/slots N', desc: 'Слот-машина со ставкой' },
+  { cmd: '/dice N', desc: 'Кость со ставкой' },
   { cmd: '/transfer @user N [comment]', desc: 'Перевод бипок' },
   { cmd: '/work', desc: 'Заработать бипок (кулдаун 2ч)' },
   { cmd: '/burn N', desc: 'Сжечь бипки' },

@@ -141,7 +141,7 @@ export function randomlyDistribute(
 ): Array<{ userId: number; amount: number }> {
   if (userIds.length < 2 || totalAmount <= 0 || count < 2) return []
 
-  const shuffled = userIds.sort(() => Math.random() - 0.5)
+  const shuffled = userIds.slice().sort(() => Math.random() - 0.5)
   const pick = shuffled.slice(0, Math.min(count, shuffled.length))
   const n = pick.length
 

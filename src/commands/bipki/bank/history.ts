@@ -1,32 +1,55 @@
 import { format, bold, join } from 'gramio'
-import { bipbank, type TransactionRow } from '@/economy'
+import { bipbank, TX_TYPE, txTypeName, type TransactionRow } from '@/economy'
 import timeAgo from '@/helpers/timeAgo'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, safeReply } from '@/helpers/shared'
 
-const EMOJI: Record<string, string> = {
-  daily: '🎁', transfer: '💸', burn: '🔥',
-  rain: '🌧', work: '💼', admin: '⚙️', fee: '💳',
+const TYPE_EMOJI: Record<number, string> = {
+  [TX_TYPE.daily]: '🎁',
+  [TX_TYPE.transfer]: '💸',
+  [TX_TYPE.burn]: '🔥',
+  [TX_TYPE.rain]: '🌧',
+  [TX_TYPE.work]: '💼',
+  [TX_TYPE.admin]: '⚙️',
+  [TX_TYPE.fee]: '💳',
+  [TX_TYPE.gambled]: '🪙',
 }
 
 function fmt(txs: TransactionRow[], uid: number) {
   if (!txs.length) return '📜 История пуста'
+
+  const feeByParent = new Map<number, number>()
+  const skipIds = new Set<number>()
+
+  for (const t of txs) {
+    if (t.type === TX_TYPE.fee && t.parent_tx_id) {
+      feeByParent.set(t.parent_tx_id, (feeByParent.get(t.parent_tx_id) ?? 0) + t.amount)
+      skipIds.add(t.id)
+    }
+  }
+
   const items = txs.map((t) => {
-    const e = EMOJI[t.type] || '📄'
-    const ts = new Date(t.created_at + 'Z').getTime() / 1000
-    const d = timeAgo(ts, true) as string
+    if (skipIds.has(t.id)) return null
+
+    const e = TYPE_EMOJI[t.type] || '📄'
+    const d = timeAgo(t.created_at, true) as string
     const isIn = t.to_user_id === uid
     const isOut = t.from_user_id === uid
+    const label = t.description || txTypeName(t.type)
+    const feeAmount = feeByParent.get(t.id)
+    const feeSuffix = feeAmount ? format` (комиссия: ${String(feeAmount)})` : ''
 
-    if (t.type === 'transfer' && isIn)
-      return format`${e} +${bold(String(t.amount))} ← user${String(t.from_user_id)} — ${d}`
-    if (t.type === 'transfer' && isOut)
-      return format`${e} -${bold(String(t.amount))} → user${String(t.to_user_id)} — ${d}`
+    if (t.type === TX_TYPE.transfer && isIn)
+      return format`${e} +${bold(String(t.amount))} ← user${String(t.from_user_id)} — ${d}${feeSuffix}`
+    if (t.type === TX_TYPE.transfer && isOut)
+      return format`${e} -${bold(String(t.amount))} → user${String(t.to_user_id)} — ${d}${feeSuffix}`
     if (isIn)
-      return format`${e} +${bold(String(t.amount))} — ${t.description || t.type} — ${d}`
-    return format`${e} -${bold(String(t.amount))} — ${t.description || t.type} — ${d}`
+      return format`${e} +${bold(String(t.amount))} — ${label} — ${d}${feeSuffix}`
+    return format`${e} -${bold(String(t.amount))} — ${label} — ${d}${feeSuffix}`
   })
-  return format`📜 ${bold(`Последние ${txs.length} операций:`)}\n${join(items, '\n')}`
+
+  const visible = items.filter(Boolean) as any[]
+  return format`📜 ${bold(`Последние ${visible.length} операций:`)}\n${join(visible, '\n')}`
 }
 
 export default (bot: BotType) =>

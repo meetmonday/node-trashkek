@@ -1,9 +1,7 @@
 import { format, bold, join } from 'gramio'
-import { bipbank } from '@/economy'
+import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply } from '@/helpers/shared'
-
-const BASE = [10, 20, 35, 45, 60, 70, 85]
 
 const BONUS = [
   { amount: 5, chance: 0.5 },
@@ -58,7 +56,7 @@ export default (bot: BotType) =>
       const bonus = roll()
       const total = base + bonus
 
-      bipbank.deposit(userId, total, 'daily', `Streak: ${streak}`)
+      bipbank.deposit(userId, total, TX_TYPE.daily, `Streak: ${streak}`)
       bipbank.updateUser(userId, { streak, last_daily: today })
 
       const parts = [format`🎁 Ежедневный бонус: ${bold(String(base))}`]

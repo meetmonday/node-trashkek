@@ -1,5 +1,7 @@
 import { Database } from 'bun:sqlite'
-import type { TxType } from './types'
+import { ensureUser } from './sql'
+import { TX_TYPE } from './types'
+import type { DbApi } from './sql'
 
 export interface PoolStatus {
   total: number
@@ -15,72 +17,52 @@ export interface PoolContribution {
 
 export class PoolManager {
   constructor(
-    private db: Database,
-    private deposit: (to: number, amount: number, type: TxType, description?: string) => void,
-    private ensureUser: (userId: number) => void,
+    private db: DbApi,
+    private rawDb: Database,
   ) {}
 
   contribute(chatId: number, poolId: string, userId: number, amount: number): void {
     if (amount <= 0) throw new Error('Amount must be positive')
-    this.ensureUser(userId)
+    ensureUser(this.rawDb, userId)
 
     this.db.transaction(() => {
-      const row = this.db.query(
-        'SELECT balance FROM users WHERE user_id = ?',
-      ).get(userId) as { balance: number } | undefined
+      const bal = this.db.balance.of(userId)
+      if (bal < amount) throw new Error('Insufficient balance')
 
-      if (!row || row.balance < amount) {
-        throw new Error('Insufficient balance')
-      }
-
-      this.db.run(
-        'UPDATE users SET balance = balance - ?, updated_at = datetime(\'now\') WHERE user_id = ?',
-        [amount, userId],
-      )
-      this.db.run(
-        'INSERT INTO transactions (from_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
-        [userId, amount, 'gambled', `pool:${poolId}`],
-      )
-
-      this.db.run(
-        `INSERT INTO game_pools (chat_id, pool_id, user_id, amount)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(chat_id, pool_id, user_id) DO UPDATE SET amount = amount + ?`,
-        [chatId, poolId, userId, amount, amount],
-      )
-    })()
+      this.db.balance.sub(userId, amount)
+      this.db.transactions.insert({ from_user_id: userId, amount, type: TX_TYPE.gambled, description: `pool:${poolId}` })
+      this.db.pools.upsertContribution(chatId, poolId, userId, amount)
+    })
   }
 
   refund(chatId: number, poolId: string): number {
     return this.db.transaction(() => {
-      const rows = this.db.query(
-        'SELECT user_id, amount FROM game_pools WHERE chat_id = ? AND pool_id = ?',
-      ).all(chatId, poolId) as { user_id: number; amount: number }[]
-
+      const rows = this.db.pools.participants(chatId, poolId)
       if (rows.length === 0) return 0
 
       for (const r of rows) {
-        this.deposit(r.user_id, r.amount, 'gambled', `pool refund:${poolId}`)
+        ensureUser(this.rawDb, r.user_id)
+        this.db.balance.add(r.user_id, r.amount)
+        this.db.transactions.insert({ to_user_id: r.user_id, amount: r.amount, type: TX_TYPE.gambled, description: `pool refund:${poolId}` })
       }
 
-      this.db.run('DELETE FROM game_pools WHERE chat_id = ? AND pool_id = ?', [chatId, poolId])
+      this.db.pools.delete(chatId, poolId)
       return rows.reduce((s, r) => s + r.amount, 0)
-    })()
+    })
   }
 
   award(chatId: number, poolId: string, winnerId: number): number {
     return this.db.transaction(() => {
-      const row = this.db.query(
-        'SELECT COALESCE(SUM(amount), 0) as total FROM game_pools WHERE chat_id = ? AND pool_id = ?',
-      ).get(chatId, poolId) as { total: number }
+      const total = this.db.pools.totalRaw(chatId, poolId)
+      if (total <= 0) throw new Error('Pool is empty')
 
-      if (row.total <= 0) throw new Error('Pool is empty')
+      ensureUser(this.rawDb, winnerId)
+      this.db.balance.add(winnerId, total)
+      this.db.transactions.insert({ to_user_id: winnerId, amount: total, type: TX_TYPE.gambled, description: `pool win:${poolId}` })
 
-      this.deposit(winnerId, row.total, 'gambled', `pool win:${poolId}`)
-
-      this.db.run('DELETE FROM game_pools WHERE chat_id = ? AND pool_id = ?', [chatId, poolId])
-      return row.total
-    })()
+      this.db.pools.delete(chatId, poolId)
+      return total
+    })
   }
 
   split(
@@ -89,45 +71,41 @@ export class PoolManager {
     recipients: Array<{ userId: number; amount: number }>,
   ): { distributed: number; fee: number } {
     return this.db.transaction(() => {
-      const row = this.db.query(
-        'SELECT COALESCE(SUM(amount), 0) as total FROM game_pools WHERE chat_id = ? AND pool_id = ?',
-      ).get(chatId, poolId) as { total: number }
-
-      if (row.total <= 0) throw new Error('Pool is empty')
+      const total = this.db.pools.totalRaw(chatId, poolId)
+      if (total <= 0) throw new Error('Pool is empty')
       if (recipients.length === 0) throw new Error('Recipients list is empty')
 
       const distributed = recipients.reduce((s, r) => s + r.amount, 0)
-      const fee = row.total - distributed
+      const fee = total - distributed
 
       for (const r of recipients) {
-        this.ensureUser(r.userId)
-        this.db.run(
-          'UPDATE users SET balance = balance + ?, updated_at = datetime(\'now\') WHERE user_id = ?',
-          [r.amount, r.userId],
-        )
-        this.db.run(
-          'INSERT INTO transactions (to_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
-          [r.userId, r.amount, 'gambled', `pool split:${poolId}`],
-        )
+        ensureUser(this.rawDb, r.userId)
+        this.db.balance.add(r.userId, r.amount)
+        this.db.transactions.insert({ to_user_id: r.userId, amount: r.amount, type: TX_TYPE.gambled, description: `pool split:${poolId}` })
       }
 
       if (fee > 0) {
-        this.db.run(
-          'INSERT INTO transactions (from_user_id, amount, type, description) VALUES (NULL, ?, ?, ?)',
-          [fee, 'fee', `pool fee:${poolId}`],
-        )
+        this.db.transactions.insert({ from_user_id: null, amount: fee, type: TX_TYPE.fee, description: `pool fee:${poolId}`, systemDescription: false })
       }
 
-      this.db.run('DELETE FROM game_pools WHERE chat_id = ? AND pool_id = ?', [chatId, poolId])
+      this.db.pools.delete(chatId, poolId)
       return { distributed, fee }
-    })()
+    })
+  }
+
+  burn(chatId: number, poolId: string): number {
+    return this.db.transaction(() => {
+      const total = this.db.pools.totalRaw(chatId, poolId)
+      if (total <= 0) return 0
+
+      this.db.transactions.insert({ from_user_id: null, amount: total, type: TX_TYPE.fee, description: `pool burn:${poolId}`, systemDescription: false })
+      this.db.pools.delete(chatId, poolId)
+      return total
+    })
   }
 
   status(chatId: number, poolId: string): PoolStatus | null {
-    const participants = this.db.query(
-      'SELECT user_id, amount FROM game_pools WHERE chat_id = ? AND pool_id = ?',
-    ).all(chatId, poolId) as { user_id: number; amount: number }[]
-
+    const participants = this.db.pools.participants(chatId, poolId)
     if (participants.length === 0) return null
 
     return {
@@ -137,10 +115,7 @@ export class PoolManager {
   }
 
   restore(): PoolContribution[] {
-    const rows = this.db.query(
-      'SELECT chat_id, pool_id, user_id, amount FROM game_pools',
-    ).all() as Array<{ chat_id: number; pool_id: string; user_id: number; amount: number }>
-
+    const rows = this.db.pools.all()
     return rows.map((r) => ({
       chatId: r.chat_id,
       poolId: r.pool_id,

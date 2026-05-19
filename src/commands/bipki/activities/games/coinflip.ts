@@ -1,55 +1,17 @@
-import { bipbank } from '@/economy'
-import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki, safeReply, userName } from '@/helpers/shared'
+import { bipbank, TX_TYPE } from '@/economy'
+import type { BotType } from '@/index'
+import { ensureBipkiUser, pluralizeBipki, userName } from '@/helpers/shared'
+import {
+  gameKey, MAX_LOG, MIN_BET, MAX_BET, parseGameBet, newBet,
+  renderGameHeader, renderGameLogLines,
+  type GameBase, type GameLogEntry,
+} from '@/helpers/games'
 
-interface CoinflipLogEntry {
-  userId: number
-  name: string
-  side: 'heads' | 'tails'
-  won: boolean
-  payout: number
-}
-
-interface CoinflipGame {
-  chatId: number
-  messageId: number
-  creatorId: number
-  creatorName: string
-  bet: number
-  closed: boolean
-  log: CoinflipLogEntry[]
+interface CoinflipGame extends GameBase {
+  log: GameLogEntry[]
 }
 
 const games = new Map<string, CoinflipGame>()
-const MAX_LOG = 20
-
-function gameKey(chatId: number, messageId: number): string {
-  return `${chatId}:${messageId}`
-}
-
-function renderGame(g: CoinflipGame): string {
-  const lines = [
-    `🪙 Монетка | Ставка: ${g.bet} ${pluralizeBipki(g.bet)} | ×2`,
-    `Создатель: ${g.creatorName}`,
-    '',
-  ]
-  if (g.closed) {
-    lines.push('🚫 Игра завершена')
-    lines.push('')
-  }
-  if (g.log.length > 0) {
-    lines.push('📋 Лог (последние 5):')
-    const display = g.log.slice(-5)
-    for (const entry of display) {
-      const emoji = entry.side === 'heads' ? '🦅' : '🌿'
-      const outcome = entry.won
-        ? `✅ выиграл ${entry.payout} (+${entry.payout - g.bet})`
-        : `❌ проиграл ${g.bet}`
-      lines.push(`${entry.name}: ${emoji} ${outcome}`)
-    }
-  }
-  return lines.join('\n')
-}
 
 const KEYBOARD: any = {
   inline_keyboard: [
@@ -65,28 +27,22 @@ const KEYBOARD: any = {
   ],
 }
 
+function renderGame(g: CoinflipGame): string {
+  return [
+    ...renderGameHeader('🪙', 'Монетка', g, '×2', g.log),
+    ...renderGameLogLines(g.log, g.creatorName),
+  ].join('\n')
+}
+
 export default (bot: BotType) => {
   bot.command("coinflip", async (ctx: any) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId || !ctx.chat?.id) return
 
-      if (!ctx.args) {
-        await ctx.reply('🪙 Укажи ставку. /coinflip 50')
-        return
-      }
-
-      const bet = parseInt(ctx.args.trim(), 10)
-      if (isNaN(bet) || bet <= 0) {
-        await ctx.reply('Ставка должна быть положительным числом')
-        return
-      }
-      if (bet < 10) {
-        await ctx.reply('Минимальная ставка — 10 бипок')
-        return
-      }
-      if (bet > 500) {
-        await ctx.reply('Максимальная ставка — 500 бипок')
+      const { bet, error } = parseGameBet(ctx.args?.trim())
+      if (error) {
+        await ctx.reply(`🪙 ${error}. /coinflip ${MIN_BET}`)
         return
       }
       if (bipbank.balance(userId) < bet) {
@@ -95,9 +51,7 @@ export default (bot: BotType) => {
       }
 
       const name = userName(ctx.from, userId)
-      const text = `🪙 Монетка | Ставка: ${bet} ${pluralizeBipki(bet)} | ×2\nСоздатель: ${name}\n\nНажимай кнопку, чтобы сделать ставку!`
-
-      const sent = await ctx.reply(text, { reply_markup: KEYBOARD })
+      const sent = await ctx.reply(renderGame({ chatId: ctx.chat.id, messageId: 0, creatorId: userId, creatorName: name, bet, closed: false, log: [] }), { reply_markup: KEYBOARD })
       const msgId = sent?.id
       if (!msgId) return
 
@@ -111,14 +65,14 @@ export default (bot: BotType) => {
         log: [],
       })
     } catch {
-      await safeReply(ctx, 'Ошибка')
+      await ctx.reply('Ошибка').catch(() => {})
     }
   })
 
-  bot.on('callback_query', async (ctx: any) => {
+  bot.on('callback_query', async (ctx: any, next: any) => {
     try {
       const raw = ctx.update?.callback_query?.data || ctx.payload?.data
-      if (!raw || typeof raw !== 'string' || !raw.startsWith('cf:')) return
+      if (!raw || typeof raw !== 'string' || !raw.startsWith('cf:')) return next()
 
       const action = raw.slice(3) as 'heads' | 'tails' | 'close' | 'double' | 'halve'
       if (action !== 'heads' && action !== 'tails' && action !== 'close' && action !== 'double' && action !== 'halve') return
@@ -161,16 +115,14 @@ export default (bot: BotType) => {
           await ctx.answerCallbackQuery({ text: 'Только создатель может менять ставку', show_alert: true })
           return
         }
-        const newBet = action === 'double'
-          ? Math.min(game.bet * 2, 500)
-          : Math.max(Math.floor(game.bet / 2), 10)
-        if (newBet === game.bet) {
+        const nb = newBet(game.bet, action)
+        if (nb === game.bet) {
           await ctx.answerCallbackQuery({ text: `Ставка уже ${game.bet} ${pluralizeBipki(game.bet)}` })
           return
         }
-        game.bet = newBet
+        game.bet = nb
         await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })
-        await ctx.answerCallbackQuery({ text: `Ставка изменена: ${newBet} ${pluralizeBipki(newBet)}` })
+        await ctx.answerCallbackQuery({ text: `Ставка изменена: ${nb} ${pluralizeBipki(nb)}` })
         return
       }
 
@@ -181,14 +133,10 @@ export default (bot: BotType) => {
 
       const side = action as 'heads' | 'tails'
       const sideEmoji = side === 'heads' ? '🦅' : '🌿'
-      const sideText = side === 'heads' ? 'Орёл' : 'Решка'
 
       const won = Math.random() < 0.5
-      const result = won ? side : (side === 'heads' ? 'tails' : 'heads')
-      const resultEmoji = result === 'heads' ? '🦅' : '🌿'
-      const resultText = result === 'heads' ? 'Орёл' : 'Решка'
 
-      if (!bipbank.withdraw(userId, game.bet, 'gambled', `Coinflip bet: ${side}`)) {
+      if (!bipbank.withdraw(userId, game.bet, TX_TYPE.gambled, `Coinflip bet: ${side}`)) {
         await ctx.answerCallbackQuery({ text: 'Ошибка при списании', show_alert: true })
         return
       }
@@ -197,13 +145,20 @@ export default (bot: BotType) => {
       let alertText: string
       if (won) {
         payout = Math.ceil(game.bet * 2)
-        bipbank.deposit(userId, payout, 'gambled', `Coinflip win: ${side}`)
-        alertText = `🪙 ${sideEmoji} ${sideText} → ${resultEmoji} ${resultText}: ВЫИГРАЛ ${payout} ${pluralizeBipki(payout)} (+${payout - game.bet}) | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
+        bipbank.deposit(userId, payout, TX_TYPE.gambled, `Coinflip win: ${side}`)
+        alertText = `🪙 ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'} → ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'}: ВЫИГРАЛ ${payout} ${pluralizeBipki(payout)} (+${payout - game.bet}) | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
       } else {
-        alertText = `🪙 ${sideEmoji} ${sideText} → ${resultEmoji} ${resultText}: ПРОИГРАЛ ${game.bet} ${pluralizeBipki(game.bet)} | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
+        const result = side === 'heads' ? '🌿 Решка' : '🦅 Орёл'
+        alertText = `🪙 ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'} → ${result}: ПРОИГРАЛ ${game.bet} ${pluralizeBipki(game.bet)} | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
       }
 
-      game.log.push({ userId, name, side, won, payout })
+      game.log.push({
+        name,
+        display: sideEmoji,
+        winName: won ? 'Выиграл' : 'Проиграл',
+        bet: game.bet,
+        payout,
+      })
       if (game.log.length > MAX_LOG + 10) {
         game.log.splice(0, game.log.length - MAX_LOG)
       }

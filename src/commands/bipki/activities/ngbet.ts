@@ -149,8 +149,10 @@ ${userName(ctx.from, userId)} поставил ${bold(String(amount))} ${plurali
       if (isNuke(text)) {
         const recipients = distributePoolRain(chatId, state)
         if (recipients.length < 3) {
+          const burned = bipbank.pools.burn(chatId, 'ngbet')
+          states.delete(chatId)
           await ctx.reply(format`${bold('🎰 NaganBet')}
-☢️ Все проиграли, но нет получателей для дождя (нужно ≥3). Банк сгорает.`)
+☢️ Все проиграли, но нет получателей для дождя (нужно ≥3). ${bold(String(burned))} ${pluralizeBipki(burned)} сгорело!`)
           return
         }
         const { distributed, fee } = bipbank.pools.split(chatId, 'ngbet', recipients)
@@ -187,8 +189,10 @@ ${join(items, '\n')}`
       } else {
         const recipients = distributePoolRain(chatId, state)
         if (recipients.length < 3) {
+          const burned = bipbank.pools.burn(chatId, 'ngbet')
+          states.delete(chatId)
           await ctx.reply(format`${bold('🎰 NaganBet')}
-💀 ${killedUsername} не в бипках, но нет получателей для дождя (нужно ≥3). Банк сгорает.`)
+💀 ${killedUsername} не в бипках, но нет получателей для дождя (нужно ≥3). ${bold(String(burned))} ${pluralizeBipki(burned)} сгорело!`)
           return
         }
         const { distributed, fee } = bipbank.pools.split(chatId, 'ngbet', recipients)

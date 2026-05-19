@@ -9,12 +9,13 @@ function textOf(call: any): string {
   return typeof t === 'string' ? t : String(t ?? '')
 }
 
-let bot: any, bipbank: any
+let bot: any, bipbank: any, TX_TYPE: any
 
 describe("Bipki Commands", () => {
   beforeAll(async () => {
     const mod = await import("@/economy")
     bipbank = mod.bipbank
+    TX_TYPE = mod.TX_TYPE
     bot = new Bot("test").extend(
       await autoload({ path: "../src/commands", picomatch: { ignore: ["**/shared.ts"] } }),
     )
@@ -36,7 +37,7 @@ describe("Bipki Commands", () => {
     it("shows deposited balance", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 2, first_name: "Rich", username: "rich" })
-      bipbank.deposit(2, 50, "admin", "test")
+      bipbank.deposit(2, 50, TX_TYPE.admin, "test")
       await user.sendCommand("bipki")
       expect(textOf(env.apiCalls[0])).toContain("50")
     })
@@ -106,7 +107,7 @@ describe("Bipki Commands", () => {
     it("burns valid amount", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 33, first_name: "Burner3" })
-      bipbank.deposit(33, 100, "admin", "test")
+      bipbank.deposit(33, 100, TX_TYPE.admin, "test")
       await user.sendCommand("burn", "30")
       expect(textOf(env.apiCalls[0])).toContain("🔥")
       expect(textOf(env.apiCalls[0])).toContain("30")
@@ -126,7 +127,7 @@ describe("Bipki Commands", () => {
     it("rejects self-transfer", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 41, first_name: "Self" })
-      bipbank.deposit(41, 100, "admin", "test")
+      bipbank.deposit(41, 100, TX_TYPE.admin, "test")
       await user.sendCommand("transfer", "41 50")
       expect(textOf(env.apiCalls[0])).toContain("самому себе")
     })
@@ -141,7 +142,7 @@ describe("Bipki Commands", () => {
     it("transfers with 5% fee to numeric ID", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 44, first_name: "A" })
-      bipbank.deposit(44, 200, "admin", "test")
+      bipbank.deposit(44, 200, TX_TYPE.admin, "test")
       bipbank.ensureUser(45)
 
       await user.sendCommand("transfer", "45 100")
@@ -154,7 +155,7 @@ describe("Bipki Commands", () => {
     it("transfers with comment", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 46, first_name: "B" })
-      bipbank.deposit(46, 200, "admin", "test")
+      bipbank.deposit(46, 200, TX_TYPE.admin, "test")
       bipbank.ensureUser(47)
 
       await user.sendCommand("transfer", "47 50 za pizza")
@@ -169,7 +170,7 @@ describe("Bipki Commands", () => {
         username: "sender_c",
       })
       const target = env.createUser({ id: 49, first_name: "D", username: "target_d" })
-      bipbank.deposit(48, 100, "admin", "test")
+      bipbank.deposit(48, 100, TX_TYPE.admin, "test")
       bipbank.setUsername(49, "target_d")
 
       await user.sendCommand("transfer", "@target_d 30")
@@ -199,7 +200,7 @@ describe("Bipki Commands", () => {
     it("distributes to chat members", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 55, first_name: "Richer" })
-      bipbank.deposit(55, 500, "admin", "test")
+      bipbank.deposit(55, 500, TX_TYPE.admin, "test")
       for (const id of [56, 57, 58, 59]) bipbank.ensureUser(id)
       const chat = env.createChat({ type: "supergroup" })
       for (const id of [55, 56, 57, 58, 59]) bipbank.ensureChatUser(chat.payload.id, id)
@@ -226,7 +227,7 @@ describe("Bipki Commands", () => {
     it("shows top in group", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 61, first_name: "TopGroup" })
-      bipbank.deposit(61, 100, "admin", "test")
+      bipbank.deposit(61, 100, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
       bipbank.ensureChatUser(chat.payload.id, 61)
 
@@ -241,7 +242,7 @@ describe("Bipki Commands", () => {
     it("shows global ranking with masked IDs", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 70, first_name: "Global" })
-      bipbank.deposit(70, 100, "admin", "test")
+      bipbank.deposit(70, 100, TX_TYPE.admin, "test")
       await user.sendCommand("globaltop")
       expect(textOf(env.apiCalls[0])).toContain("Глобальный топ")
     })
@@ -259,9 +260,270 @@ describe("Bipki Commands", () => {
     it("lists recent transactions", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 81, first_name: "Historian" })
-      bipbank.deposit(81, 100, "work", "test job")
+      bipbank.deposit(81, 100, TX_TYPE.work, "test job")
       await user.sendCommand("history")
       expect(textOf(env.apiCalls[0])).toContain("💼")
+    })
+  })
+
+  // ── getDiceResult (pure) ────────────────────────────────────────
+  describe("getDiceResult", () => {
+    it("pays 3x on value 6", async () => {
+      const { getDiceResult } = await import("@/commands/bipki/activities/games/dice")
+      const r = getDiceResult(6)
+      expect(r.payoutMult).toBe(3)
+      expect(r.winName).toContain("Шестёрка")
+    })
+
+    it("pays 2x on value 5", async () => {
+      const { getDiceResult } = await import("@/commands/bipki/activities/games/dice")
+      const r = getDiceResult(5)
+      expect(r.payoutMult).toBe(2)
+      expect(r.winName).toContain("Пятёрка")
+    })
+
+    it("pays 1x on value 4 (refund)", async () => {
+      const { getDiceResult } = await import("@/commands/bipki/activities/games/dice")
+      const r = getDiceResult(4)
+      expect(r.payoutMult).toBe(1)
+      expect(r.winName).toContain("Четвёрка")
+    })
+
+    it("pays 0x on values 1-3", async () => {
+      const { getDiceResult } = await import("@/commands/bipki/activities/games/dice")
+      for (const v of [1, 2, 3]) {
+        expect(getDiceResult(v).payoutMult).toBe(0)
+      }
+    })
+
+    it("returns emoji display for each value", async () => {
+      const { getDiceResult } = await import("@/commands/bipki/activities/games/dice")
+      for (let v = 1; v <= 6; v++) {
+        const r = getDiceResult(v)
+        expect(r.display.length).toBeGreaterThan(0)
+      }
+    })
+  })
+
+  // ── getSlotResult (pure) ────────────────────────────────────────
+  describe("getSlotResult", () => {
+    it("pays 10x on 7️⃣7️⃣7️⃣ (value 64)", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      const r = getSlotResult(64)
+      expect(r.payoutMult).toBe(10)
+      expect(r.winName).toContain("Джекпот")
+    })
+
+    it("pays 5x on 🎰🎰🎰 (value 1)", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      const r = getSlotResult(1)
+      expect(r.payoutMult).toBe(5)
+      expect(r.winName).toContain("BAR")
+    })
+
+    it("pays 3x on 🍇🍇🍇 (value 22)", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      const r = getSlotResult(22)
+      expect(r.payoutMult).toBe(3)
+      expect(r.winName).toContain("Виноград")
+    })
+
+    it("pays 2x on 🍋🍋🍋 (value 43)", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      const r = getSlotResult(43)
+      expect(r.payoutMult).toBe(2)
+      expect(r.winName).toContain("Лимон")
+    })
+
+    it("pays 1x on pair", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      // value 2 = 0b000010 = 🎰 🎰 🍇 (pair of BAR)
+      const r = getSlotResult(2)
+      expect(r.payoutMult).toBe(1)
+      expect(r.winName).toContain("Пара")
+    })
+
+    it("pays 0x on all different", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      // value 0 = 0b000000 = 🎰 🎰 🎰 (wait no, that's triple BAR)
+      // value 21 = 0b010101 = 🎰 🍇 🎰 (pair, not all different)
+      // Let me find a guaranteed all-different: 🎰🍇🍋 = bits 0,1,2 = 0b100100 = 36
+      // Actually: r0=0(BAR), r1=1(grape), r2=2(lemon) → bits: 0 | 1<<2 | 2<<4 = 0 | 4 | 32 = 36
+      const r = getSlotResult(36)
+      expect(r.payoutMult).toBe(0)
+      expect(r.winName).toBe("Мимо")
+    })
+
+    it("returns display with 3 space-separated parts", async () => {
+      const { getSlotResult } = await import("@/commands/bipki/activities/games/slots")
+      const r = getSlotResult(36)
+      expect(r.display.split(' ').length).toBe(3)
+    })
+  })
+
+  // ── /dice (command flow) ────────────────────────────────────────
+  describe("/dice", () => {
+    it("rejects missing args", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 200, first_name: "Dice" })
+      await user.sendCommand("dice")
+      expect(textOf(env.apiCalls[0])).toContain("Укажи")
+    })
+
+    it("rejects invalid amount", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 201, first_name: "BadDice" })
+      await user.sendCommand("dice", "abc")
+      expect(textOf(env.apiCalls[0])).toContain("положительным")
+    })
+
+    it("rejects insufficient balance", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 202, first_name: "BrokeDice" })
+      await user.sendCommand("dice", "100")
+      expect(textOf(env.apiCalls[0])).toContain("Недостаточно")
+    })
+
+    it("rejects below minimum", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 203, first_name: "SmallDice" })
+      bipbank.deposit(203, 100, TX_TYPE.admin, "test")
+      await user.sendCommand("dice", "5")
+      expect(textOf(env.apiCalls[0])).toContain("Минимальная")
+    })
+
+    it("rejects above maximum", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 204, first_name: "BigDice" })
+      bipbank.deposit(204, 1000, TX_TYPE.admin, "test")
+      await user.sendCommand("dice", "999")
+      expect(textOf(env.apiCalls[0])).toContain("Максимальная")
+    })
+
+    it("creates game with buttons", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 205, first_name: "DiceCreator" })
+      bipbank.deposit(205, 200, TX_TYPE.admin, "test")
+      await user.sendCommand("dice", "50")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+      expect(msg!.payload.reply_markup).toBeDefined()
+    })
+
+    it("refunds bet when sendDice fails", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 206, first_name: "FailDice" })
+      bipbank.deposit(206, 200, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("dice", "50")
+      const gameMsg = env.lastBotMessage()
+      expect(gameMsg).toBeDefined()
+
+      bot.api.sendDice = async () => { throw new Error("API fail") }
+      await user.on(gameMsg!).clickByText('🎲 Бросить')
+
+      expect(bipbank.balance(206)).toBe(200)
+    })
+
+    it("close button works for creator", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 210, first_name: "CloseDice" })
+      bipbank.deposit(210, 200, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("dice", "50")
+      const gameMsg = env.lastBotMessage()
+
+      await user.on(gameMsg!).clickByText('🏁 Закрыть')
+
+      const edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('завершена')
+    })
+
+    it("double/halve changes bet for creator", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 212, first_name: "BetDice" })
+      bipbank.deposit(212, 500, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("dice", "50")
+      const gameMsg = env.lastBotMessage()
+
+      await user.on(gameMsg!).clickByText('✖️ x2')
+      let edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('100')
+
+      await user.on(gameMsg!).clickByText('➗ x0.5')
+      edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('50')
+    })
+  })
+
+  // ── /slots (command flow) ──────────────────────────────────────
+  describe("/slots", () => {
+    it("rejects missing args", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 300, first_name: "Slots" })
+      await user.sendCommand("slots")
+      expect(textOf(env.apiCalls[0])).toContain("Укажи")
+    })
+
+    it("rejects invalid amount", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 301, first_name: "BadSlots" })
+      await user.sendCommand("slots", "xyz")
+      expect(textOf(env.apiCalls[0])).toContain("положительным")
+    })
+
+    it("rejects insufficient balance", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 302, first_name: "BrokeSlots" })
+      await user.sendCommand("slots", "500")
+      expect(textOf(env.apiCalls[0])).toContain("Недостаточно")
+    })
+
+    it("creates game with buttons", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 303, first_name: "SlotsCreator" })
+      bipbank.deposit(303, 200, TX_TYPE.admin, "test")
+      await user.sendCommand("slots", "50")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+      expect(msg!.payload.reply_markup).toBeDefined()
+    })
+
+    it("close button works for creator", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 308, first_name: "CloseSlots" })
+      bipbank.deposit(308, 200, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("slots", "50")
+      const gameMsg = env.lastBotMessage()
+
+      await user.on(gameMsg!).clickByText('🏁 Закрыть')
+
+      const edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('завершена')
+    })
+
+    it("double/halve changes bet for creator", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 309, first_name: "BetSlots" })
+      bipbank.deposit(309, 500, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("slots", "50")
+      const gameMsg = env.lastBotMessage()
+
+      await user.on(gameMsg!).clickByText('✖️ x2')
+      let edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('100')
+
+      await user.on(gameMsg!).clickByText('➗ x0.5')
+      edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain('50')
     })
   })
 
@@ -291,7 +553,7 @@ describe("Bipki Commands", () => {
     it("rejects below minimum", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 107, first_name: "Small" })
-      bipbank.deposit(107, 100, "admin", "test")
+      bipbank.deposit(107, 100, TX_TYPE.admin, "test")
       await user.sendCommand("coinflip", "5")
       expect(textOf(env.apiCalls[0])).toContain("Минимальная")
     })
@@ -299,7 +561,7 @@ describe("Bipki Commands", () => {
     it("rejects above maximum", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 108, first_name: "Big" })
-      bipbank.deposit(108, 1000, "admin", "test")
+      bipbank.deposit(108, 1000, TX_TYPE.admin, "test")
       await user.sendCommand("coinflip", "999")
       expect(textOf(env.apiCalls[0])).toContain("Максимальная")
     })
@@ -307,7 +569,7 @@ describe("Bipki Commands", () => {
     it("creates game with buttons", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 104, first_name: "Creator" })
-      bipbank.deposit(104, 200, "admin", "test")
+      bipbank.deposit(104, 200, TX_TYPE.admin, "test")
 
       await user.sendCommand("coinflip", "50")
 
@@ -320,7 +582,7 @@ describe("Bipki Commands", () => {
     it("processes heads click", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 105, first_name: "Player" })
-      bipbank.deposit(105, 200, "admin", "test")
+      bipbank.deposit(105, 200, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
 
       await user.in(chat).sendCommand("coinflip", "50")
@@ -337,7 +599,7 @@ describe("Bipki Commands", () => {
     it("records gambled transactions on click", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 106, first_name: "Tracker" })
-      bipbank.deposit(106, 200, "admin", "test")
+      bipbank.deposit(106, 200, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
 
       await user.in(chat).sendCommand("coinflip", "50")
@@ -346,14 +608,14 @@ describe("Bipki Commands", () => {
       await user.on(gameMsg!).clickByText('🌿 Решка')
 
       const tx = bipbank.history(106, 10)
-      const gambled = tx.filter((t: any) => t.type === 'gambled')
+      const gambled = tx.filter((t: any) => t.type === TX_TYPE.gambled)
       expect(gambled.length).toBeGreaterThanOrEqual(1)
     })
 
     it("close button works for creator", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 109, first_name: "Closer" })
-      bipbank.deposit(109, 200, "admin", "test")
+      bipbank.deposit(109, 200, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
 
       await user.in(chat).sendCommand("coinflip", "50")
@@ -368,7 +630,7 @@ describe("Bipki Commands", () => {
     it("alert shows balance after play", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 110, first_name: "Balancer" })
-      bipbank.deposit(110, 200, "admin", "test")
+      bipbank.deposit(110, 200, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
 
       await user.in(chat).sendCommand("coinflip", "50")
@@ -383,7 +645,7 @@ describe("Bipki Commands", () => {
     it("log shows last 5 entries newest first", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 111, first_name: "Logger" })
-      bipbank.deposit(111, 1000, "admin", "test")
+      bipbank.deposit(111, 1000, TX_TYPE.admin, "test")
       const chat = env.createChat({ type: "supergroup" })
 
       await user.in(chat).sendCommand("coinflip", "10")
@@ -408,7 +670,7 @@ describe("Bipki Commands", () => {
 
     it("getWorkAmount returns within expected range", () => {
       bipbank.clearAll()
-      bipbank.deposit(200, 1000, "admin", "test")
+      bipbank.deposit(200, 1000, TX_TYPE.admin, "test")
       for (let i = 0; i < 50; i++) {
         const amt = bipbank.stabilizer.getWorkAmount()
         expect(amt).toBeGreaterThanOrEqual(8)
@@ -418,7 +680,7 @@ describe("Bipki Commands", () => {
 
     it("getDailyBaseAmount returns non-negative", () => {
       bipbank.clearAll()
-      bipbank.deposit(210, 100, "admin", "test")
+      bipbank.deposit(210, 100, TX_TYPE.admin, "test")
       for (let s = 1; s <= 10; s++) {
         expect(bipbank.stabilizer.getDailyBaseAmount(s)).toBeGreaterThan(0)
       }
@@ -432,7 +694,7 @@ describe("Bipki Commands", () => {
     })
 
     it("totalBurned increases after burn and fees", () => {
-      bipbank.deposit(90, 200, "admin", "test")
+      bipbank.deposit(90, 200, TX_TYPE.admin, "test")
       bipbank.burn(90, 50)
       expect(bipbank.totalBurned()).toBe(50)
       bipbank.transfer(90, 91, 100) // fee = 5
@@ -441,12 +703,12 @@ describe("Bipki Commands", () => {
 
     it("economyStats returns all fields", () => {
       bipbank.clearAll()
-      bipbank.deposit(95, 200, "admin", "test")
-      bipbank.deposit(95, 50, "work", "job")
-      bipbank.deposit(95, 30, "daily", "streak")
+      bipbank.deposit(95, 200, TX_TYPE.admin, "test")
+      bipbank.deposit(95, 50, TX_TYPE.work, "job")
+      bipbank.deposit(95, 30, TX_TYPE.daily, "streak")
       bipbank.transfer(95, 96, 100)
       bipbank.burn(95, 10)
-      bipbank.withdraw(95, 20, "gambled", "test bet")
+      bipbank.withdraw(95, 20, TX_TYPE.gambled, "test bet")
       const stats = bipbank.economyStats()
       expect(stats.totalSupply).toBeGreaterThan(0)
       expect(stats.userCount).toBeGreaterThan(0)
@@ -490,7 +752,7 @@ describe("Bipki Commands", () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 1, first_name: "Admin" })
       bipbank.setUsername(61, "target_b")
-      bipbank.deposit(61, 200, "admin", "seed")
+      bipbank.deposit(61, 200, TX_TYPE.admin, "seed")
       await user.sendCommand("bbadmin", "@target_b -50 shtraf")
       expect(textOf(env.apiCalls[0])).toContain("списал")
       expect(textOf(env.apiCalls[0])).toContain("50")
