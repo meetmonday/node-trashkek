@@ -330,8 +330,8 @@ describe("Bipki Commands", () => {
       await user.on(gameMsg!).clickByText('🦅 Орёл')
 
       const bal = bipbank.balance(105)
-      // 200 - 50 = 150 if lose, or 200 - 50 + 98 = 248 if win
-      expect(bal === 150 || bal === 248).toBe(true)
+      // 200 - 50 = 150 if lose, or 200 - 50 + 100 = 250 if win
+      expect(bal === 150 || bal === 250).toBe(true)
     })
 
     it("records gambled transactions on click", async () => {
@@ -461,11 +461,11 @@ describe("Bipki Commands", () => {
 
   // ── /admin ──────────────────────────────────────────────────────
   describe("/admin", () => {
-    it("rejects non-admin", async () => {
+    it("rejects non-admin silently", async () => {
       const env = new TelegramTestEnvironment(bot)
       const user = env.createUser({ id: 999, first_name: "Hacker" })
       await user.sendCommand("bbadmin", "@user +100")
-      expect(textOf(env.apiCalls[0])).toContain("Ты не админ")
+      expect(env.apiCalls.length).toBe(0)
     })
 
     it("shows format hint when args missing", async () => {

@@ -1,6 +1,5 @@
 import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync } from 'fs'
-import { dirname, join } from 'path'
 import { PoolManager } from './pool-manager'
 import { Stabilizer } from './stabilizer'
 import { AdminManager } from './admin-manager'
@@ -47,10 +46,10 @@ export class BipBank {
     this.db.run('PRAGMA synchronous=FULL')
     this.db.run('PRAGMA journal_size_limit=268435456')
     this.db.run('PRAGMA cache_size=-64000')
-    this.dbManager = new DatabaseManager(this.db)
+    this.dbManager = new DatabaseManager(this.db, this.dbPath)
     this.dbManager.initTables()
     this.dbManager.migrate()
-    this.backupDb()
+    this.dbManager.backupDb()
 
     this.pools = new PoolManager(
       this.db,
@@ -426,16 +425,6 @@ export class BipBank {
       username,
       userId,
     ])
-  }
-
-  backupDb(): string | null {
-    if (this.dbPath === ':memory:') return null
-    const backupDir = join(dirname(this.dbPath), 'backups')
-    if (!existsSync(backupDir)) mkdirSync(backupDir, { recursive: true })
-    const ts = new Date().toISOString().replace(/[:.]/g, '-')
-    const backupPath = join(backupDir, `bipki-${ts}.db`)
-    this.db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`)
-    return backupPath
   }
 
   /**

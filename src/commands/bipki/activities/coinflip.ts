@@ -29,7 +29,7 @@ function gameKey(chatId: number, messageId: number): string {
 
 function renderGame(g: CoinflipGame): string {
   const lines = [
-    `🪙 Монетка | Ставка: ${g.bet} ${pluralizeBipki(g.bet)} | ×похуй`,
+    `🪙 Монетка | Ставка: ${g.bet} ${pluralizeBipki(g.bet)} | ×2`,
     `Создатель: ${g.creatorName}`,
     '',
   ]
@@ -95,7 +95,7 @@ export default (bot: BotType) => {
       }
 
       const name = userName(ctx.from, userId)
-      const text = `🪙 Монетка | Ставка: ${bet} ${pluralizeBipki(bet)} | ×поебать\nСоздатель: ${name}\n\nНажимай кнопку, чтобы сделать ставку!`
+      const text = `🪙 Монетка | Ставка: ${bet} ${pluralizeBipki(bet)} | ×2\nСоздатель: ${name}\n\nНажимай кнопку, чтобы сделать ставку!`
 
       const sent = await ctx.reply(text, { reply_markup: KEYBOARD })
       const msgId = sent?.id

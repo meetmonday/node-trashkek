@@ -52,7 +52,7 @@ export default (bot: BotType) =>
         if (parts[0]?.startsWith('@')) argsStr = parts.slice(1).join(' ')
       }
 
-      const amountMatch = argsStr.match(/^([+-]?\d+)/)
+      const amountMatch = argsStr.match(/^([+-]\d+)/)
       if (!amountMatch) {
         await ctx.reply('Укажи сумму с +/- (например +100 или -50)')
         return
