@@ -1,6 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank, type TopRow } from '@/economy'
 import type { BotType } from '../..'
+import { safeReply } from '@/helpers/shared'
 
 function render(rows: TopRow[], title: string, isGlobal = false) {
   if (!rows.length) return 'Топ пуст'
@@ -22,7 +23,7 @@ export default (bot: BotType) => {
       const rows = bipbank.top(ctx.chat?.id, 10)
       await ctx.reply(render(rows, 'Топ чата'))
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })
 
@@ -30,7 +31,7 @@ export default (bot: BotType) => {
     try {
       await ctx.reply(render(bipbank.top(undefined, 10), 'Глобальный топ', true))
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })
 }

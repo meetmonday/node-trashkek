@@ -1,4 +1,4 @@
-```
+
 # Dependencies
 node_modules/
 
@@ -68,4 +68,3 @@ data/
 
 # Original rules preserved
 *.log
-```

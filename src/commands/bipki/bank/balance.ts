@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
 
 export default (bot: BotType) =>
   bot.command("bipki", async (ctx: any) => {
@@ -10,46 +10,20 @@ export default (bot: BotType) =>
       if (!userId) return
 
       let targetId = userId
-      let targetName =
-        ctx.from?.first_name || ctx.from?.username || `user${userId}`
+      let targetName = userName(ctx.from, userId)
 
-      if (ctx.replyMessage?.from) {
-        targetId = ctx.replyMessage.from.id
-        targetName =
-          ctx.replyMessage.from.first_name ||
-          ctx.replyMessage.from.username ||
-          `user${targetId}`
-      }
-
-      if (ctx.entities) {
-        for (const entity of ctx.entities) {
-          if (entity.type === 'mention') {
-            const mention = ctx.text
-              ?.slice(entity.offset, entity.offset + entity.length)
-              ?.replace('@', '')
-            if (mention) {
-              const found = bipbank.findByUsername(mention)
-              if (found !== null) {
-                targetId = found
-                targetName = `@${mention}`
-                break
-              }
-            }
-          }
-          if (entity.type === 'text_mention' && entity.user) {
-            targetId = entity.user.id
-            targetName =
-              entity.user.first_name ||
-              entity.user.username ||
-              `user${targetId}`
-            break
-          }
-        }
+      const resolved = resolveTarget(ctx)
+      if (resolved.targetId) {
+        targetId = resolved.targetId
+        targetName = resolved.targetName || userName(ctx.from, userId)
       }
 
       if (ctx.args) {
         const trimmed = ctx.args.trim()
-        if (/^\d+$/.test(trimmed)) targetId = parseInt(trimmed, 10)
+        if (/^\d+$/.test(trimmed)) {
+          targetId = parseInt(trimmed, 10)
+          targetName = userName(ctx.from, targetId)
+        }
       }
 
       const user = bipbank.getUser(targetId)
@@ -64,6 +38,6 @@ export default (bot: BotType) =>
 
       await ctx.reply(join(parts, ''))
     } catch {
-      await ctx.reply('Ошибка при получении баланса').catch(() => {})
+      await safeReply(ctx, 'Ошибка при получении баланса')
     }
   })

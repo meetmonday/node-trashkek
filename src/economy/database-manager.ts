@@ -62,6 +62,9 @@ export class DatabaseManager {
   }
 
   clearAll(): void {
+    if (process.env.NODE_ENV !== 'test') {
+      throw new Error('clearAll() is only available in test environment')
+    }
     this.db.run('DELETE FROM transactions')
     this.db.run('DELETE FROM game_pools')
     this.db.run('DELETE FROM chat_users')

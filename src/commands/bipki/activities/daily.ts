@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply } from '@/helpers/shared'
 
 const BASE = [10, 20, 35, 45, 60, 70, 85]
 
@@ -72,6 +72,6 @@ export default (bot: BotType) =>
 
       await ctx.reply(join(parts, ''))
     } catch {
-      await ctx.reply('Ошибка при получении бонуса').catch(() => {})
+      await safeReply(ctx, 'Ошибка при получении бонуса')
     }
   })

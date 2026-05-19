@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser } from '@/helpers/shared'
+import { ensureBipkiUser, safeReply } from '@/helpers/shared'
 
 export default (bot: BotType) =>
   bot.command("economy", async (ctx: any) => {
@@ -22,6 +22,6 @@ export default (bot: BotType) =>
       ]
       await ctx.reply(format`📊 ${bold('Экономика бипок')}\n${join(items, '\n')}`)
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })

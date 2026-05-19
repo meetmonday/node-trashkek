@@ -1,5 +1,6 @@
 import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync } from 'fs'
+import { dirname, join } from 'path'
 import { PoolManager } from './pool-manager'
 import { Stabilizer } from './stabilizer'
 import { AdminManager } from './admin-manager'
@@ -10,7 +11,9 @@ import type {
   TransferResult, RainDistributeResult,
 } from './types'
 
-const DB_PATH = process.env.BIPKI_DB_PATH || 'data/bipki.db'
+function getDbPath(): string {
+  return process.env.BIPKI_DB_PATH || 'data/bipki.db'
+}
 
 /**
  * Core engine for the Bipki internal currency system.
@@ -27,20 +30,27 @@ export class BipBank {
   readonly pools: PoolManager
 
   /** Create or open the database, run migrations. */
+  readonly dbPath: string
+
   constructor() {
-    const dir = DB_PATH.lastIndexOf('/')
+    this.dbPath = getDbPath()
+    const dir = this.dbPath.lastIndexOf('/')
     if (dir > 0) {
-      const dirPath = DB_PATH.slice(0, dir)
+      const dirPath = this.dbPath.slice(0, dir)
       if (!existsSync(dirPath)) mkdirSync(dirPath, { recursive: true })
     }
 
-    this.db = new Database(DB_PATH)
+    this.db = new Database(this.dbPath)
     this.db.run('PRAGMA journal_mode=WAL')
     this.db.run('PRAGMA busy_timeout=5000')
     this.db.run('PRAGMA foreign_keys=ON')
+    this.db.run('PRAGMA synchronous=FULL')
+    this.db.run('PRAGMA journal_size_limit=268435456')
+    this.db.run('PRAGMA cache_size=-64000')
     this.dbManager = new DatabaseManager(this.db)
     this.dbManager.initTables()
     this.dbManager.migrate()
+    this.backupDb()
 
     this.pools = new PoolManager(
       this.db,
@@ -94,14 +104,16 @@ export class BipBank {
     if (amount <= 0) throw new Error('Amount must be positive')
     this.ensureUser(to)
 
-    this.db.run(
-      'UPDATE users SET balance = balance + ?, updated_at = datetime(\'now\') WHERE user_id = ?',
-      [amount, to],
-    )
-    this.db.run(
-      'INSERT INTO transactions (to_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
-      [to, amount, type, description ?? null],
-    )
+    this.db.transaction(() => {
+      this.db.run(
+        'UPDATE users SET balance = balance + ?, updated_at = datetime(\'now\') WHERE user_id = ?',
+        [amount, to],
+      )
+      this.db.run(
+        'INSERT INTO transactions (to_user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+        [to, amount, type, description ?? null],
+      )
+    })()
   }
 
   /**
@@ -416,6 +428,16 @@ export class BipBank {
     ])
   }
 
+  backupDb(): string | null {
+    if (this.dbPath === ':memory:') return null
+    const backupDir = join(dirname(this.dbPath), 'backups')
+    if (!existsSync(backupDir)) mkdirSync(backupDir, { recursive: true })
+    const ts = new Date().toISOString().replace(/[:.]/g, '-')
+    const backupPath = join(backupDir, `bipki-${ts}.db`)
+    this.db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`)
+    return backupPath
+  }
+
   /**
    * Delete all rows from every table.
    *
@@ -423,6 +445,9 @@ export class BipBank {
    * `game_pools`, `chat_users`, and `users`.
    */
   clearAll(): void {
+    if (this.dbPath !== ':memory:') {
+      throw new Error('clearAll() is only available on in-memory databases')
+    }
     this.dbManager.clearAll()
     this.stabilizer.reset()
   }
@@ -443,6 +468,30 @@ export class BipBank {
     ).get(clean) as { user_id: number } | undefined
     return row?.user_id ?? null
   }
+
+  close(): void {
+    try {
+      this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+    } catch {
+      // checkpoint may fail if db is busy, ignore
+    }
+    this.db.close()
+  }
 }
 
-export const bipbank = new BipBank()
+let _instance: BipBank | undefined
+
+function getInstance(): BipBank {
+  if (!_instance) _instance = new BipBank()
+  return _instance
+}
+
+export const bipbank = new Proxy({} as BipBank, {
+  get(_, prop) {
+    return Reflect.get(getInstance(), prop, getInstance())
+  },
+  set(_, prop, value) {
+    Reflect.set(getInstance(), prop, value)
+    return true
+  },
+})

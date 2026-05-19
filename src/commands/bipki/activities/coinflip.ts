@@ -1,6 +1,6 @@
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply, userName } from '@/helpers/shared'
 
 interface CoinflipLogEntry {
   userId: number
@@ -29,7 +29,7 @@ function gameKey(chatId: number, messageId: number): string {
 
 function renderGame(g: CoinflipGame): string {
   const lines = [
-    `🪙 Монетка | Ставка: ${g.bet} ${pluralizeBipki(g.bet)} | ×1.95`,
+    `🪙 Монетка | Ставка: ${g.bet} ${pluralizeBipki(g.bet)} | ×похуй`,
     `Создатель: ${g.creatorName}`,
     '',
   ]
@@ -58,6 +58,8 @@ const KEYBOARD: any = {
       { text: '🌿 Решка', callback_data: 'cf:tails' },
     ],
     [
+      { text: '✖️ x2', callback_data: 'cf:double' },
+      { text: '➗ x0.5', callback_data: 'cf:halve' },
       { text: '🏁 Закрыть', callback_data: 'cf:close' },
     ],
   ],
@@ -92,8 +94,8 @@ export default (bot: BotType) => {
         return
       }
 
-      const name = ctx.from?.first_name || ctx.from?.username || `user${userId}`
-      const text = `🪙 Монетка | Ставка: ${bet} ${pluralizeBipki(bet)} | ×1.95\nСоздатель: ${name}\n\nНажимай кнопку, чтобы сделать ставку!`
+      const name = userName(ctx.from, userId)
+      const text = `🪙 Монетка | Ставка: ${bet} ${pluralizeBipki(bet)} | ×поебать\nСоздатель: ${name}\n\nНажимай кнопку, чтобы сделать ставку!`
 
       const sent = await ctx.reply(text, { reply_markup: KEYBOARD })
       const msgId = sent?.id
@@ -109,7 +111,7 @@ export default (bot: BotType) => {
         log: [],
       })
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })
 
@@ -118,8 +120,8 @@ export default (bot: BotType) => {
       const raw = ctx.update?.callback_query?.data || ctx.payload?.data
       if (!raw || typeof raw !== 'string' || !raw.startsWith('cf:')) return
 
-      const action = raw.slice(3) as 'heads' | 'tails' | 'close'
-      if (action !== 'heads' && action !== 'tails' && action !== 'close') return
+      const action = raw.slice(3) as 'heads' | 'tails' | 'close' | 'double' | 'halve'
+      if (action !== 'heads' && action !== 'tails' && action !== 'close' && action !== 'double' && action !== 'halve') return
 
       const chatId = ctx.chatId
       const msgId = ctx.message?.id
@@ -141,7 +143,7 @@ export default (bot: BotType) => {
         await ctx.answerCallbackQuery({ text: 'Ошибка', show_alert: true })
         return
       }
-      const name = ctx.from?.first_name || ctx.from?.username || `user${userId}`
+      const name = userName(ctx.from, userId)
 
       if (action === 'close') {
         if (userId !== game.creatorId) {
@@ -151,6 +153,24 @@ export default (bot: BotType) => {
         game.closed = true
         await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })
         await ctx.answerCallbackQuery({ text: 'Игра закрыта' })
+        return
+      }
+
+      if (action === 'double' || action === 'halve') {
+        if (userId !== game.creatorId) {
+          await ctx.answerCallbackQuery({ text: 'Только создатель может менять ставку', show_alert: true })
+          return
+        }
+        const newBet = action === 'double'
+          ? Math.min(game.bet * 2, 500)
+          : Math.max(Math.floor(game.bet / 2), 10)
+        if (newBet === game.bet) {
+          await ctx.answerCallbackQuery({ text: `Ставка уже ${game.bet} ${pluralizeBipki(game.bet)}` })
+          return
+        }
+        game.bet = newBet
+        await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })
+        await ctx.answerCallbackQuery({ text: `Ставка изменена: ${newBet} ${pluralizeBipki(newBet)}` })
         return
       }
 
@@ -176,7 +196,7 @@ export default (bot: BotType) => {
       let payout = 0
       let alertText: string
       if (won) {
-        payout = Math.ceil(game.bet * 1.95)
+        payout = Math.ceil(game.bet * 2)
         bipbank.deposit(userId, payout, 'gambled', `Coinflip win: ${side}`)
         alertText = `🪙 ${sideEmoji} ${sideText} → ${resultEmoji} ${resultText}: ВЫИГРАЛ ${payout} ${pluralizeBipki(payout)} (+${payout - game.bet}) | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
       } else {

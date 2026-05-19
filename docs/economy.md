@@ -421,6 +421,83 @@ pluralizeBipki(11)  // → "бипок"
 
 Склонение слова "бипки" по правилам русского языка (1, 2-4, 5-20, 21+).
 
+### safeReply
+
+```ts
+import { safeReply } from '@/helpers/shared'
+
+await safeReply(ctx, 'Ошибка')
+// вместо try { await ctx.reply('Ошибка') } catch { /* ignore */ }
+```
+
+Безопасный `ctx.reply` — ловит и игнорирует ошибки отправки. Заменяет паттерн `ctx.reply('...').catch(() => {})` во всех командах.
+
+### userName
+
+```ts
+import { userName } from '@/helpers/shared'
+
+userName(ctx.from, userId)              // "Анонимус" или "user123"
+userName(ctx.replyMessage?.from, to)    // имя из reply
+userName(entity.user, entity.user.id)   // имя из text_mention
+```
+
+Извлекает имя пользователя из объекта с полями `first_name` / `username`. Если оба отсутствуют — возвращает `user${fallbackId}`.
+
+Заменяет повторяющийся паттерн `obj.first_name || obj.username || \`user${id}\``.
+
+### parsePositiveAmount
+
+```ts
+import { parsePositiveAmount } from '@/helpers/shared'
+
+const { amount, error } = parsePositiveAmount(ctx.args)
+if (error) {
+  await ctx.reply(error)
+  return
+}
+// amount гарантированно > 0
+```
+
+Парсит положительное целое число из строки. Возвращает `{ amount }` при успехе или `{ amount: 0, error: 'Сумма должна быть положительным числом' }` при неудаче.
+
+### resolveTarget
+
+```ts
+import { resolveTarget } from '@/helpers/shared'
+
+const { targetId, targetName } = resolveTarget(ctx)
+if (targetId) {
+  // найден через reply, text_mention, или @mention
+}
+```
+
+Определяет целевого пользователя из контекста команды. Проверяет (в порядке приоритета):
+1. **reply** — `ctx.replyMessage.from`
+2. **text_mention** — `entity.type === 'text_mention'`
+3. **mention** — `@username` через `bipbank.findByUsername()`
+
+Возвращает `{ targetId, targetName }` или `{ targetId: null, targetName: '' }`.
+
+Заменяет ручной перебор `ctx.entities` в `balance.ts`, `admin.ts`, `transfers.ts`.
+
+### randomlyDistribute
+
+```ts
+import { randomlyDistribute } from '@/helpers/shared'
+
+const userIds = bipbank.getChatUserIds(chatId).filter(id => id !== senderId)
+const recipients = randomlyDistribute(userIds, totalAmount, Math.min(5, userIds.length))
+// → [{ userId: 123, amount: 15 }, { userId: 456, amount: 20 }, ...]
+```
+
+Случайно распределяет сумму между N получателями.
+- Принимает массив ID, сумму, количество получателей
+- Возвращает массив `{ userId, amount }` или `[]` если < 2 кандидатов
+- Доли случайные, в сумме дают `totalAmount`
+
+Используется в `/rain` и `/ngbet` для раздачи дождя.
+
 ---
 
 ## База данных

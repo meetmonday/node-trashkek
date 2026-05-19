@@ -2,7 +2,7 @@ import { format, bold, join } from 'gramio'
 import { bipbank, type TransactionRow } from '@/economy'
 import timeAgo from '@/helpers/timeAgo'
 import type { BotType } from '../../..'
-import { ensureBipkiUser } from '@/helpers/shared'
+import { ensureBipkiUser, safeReply } from '@/helpers/shared'
 
 const EMOJI: Record<string, string> = {
   daily: '🎁', transfer: '💸', burn: '🔥',
@@ -43,6 +43,6 @@ export default (bot: BotType) =>
 
       await ctx.reply(fmt(bipbank.history(uid, limit), uid))
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })

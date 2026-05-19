@@ -4,9 +4,6 @@ import { Bot } from "gramio"
 import { TelegramTestEnvironment } from "@gramio/test"
 import { autoload } from "@gramio/autoload"
 
-process.env.BIPKI_DB_PATH = ':memory:'
-process.env.ADMIN_IDS = '1'
-
 function textOf(call: any): string {
   const t = call?.params?.text
   return typeof t === 'string' ? t : String(t ?? '')

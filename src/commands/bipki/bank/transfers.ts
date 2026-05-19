@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
 
 function findLastAmount(parts: string[]): { idx: number; amount: number } | null {
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -31,21 +31,8 @@ function parse(ctx: any): { to?: number; amount?: number; comment?: string; err?
   const { idx: amountIdx, amount } = found
   const comment = parts.slice(amountIdx + 1).join(' ')
 
-  if (ctx.entities) {
-    for (const e of ctx.entities) {
-      if (e.type === 'text_mention' && e.user)
-        return { to: e.user.id, amount, comment }
-      if (e.type === 'mention') {
-        const mention = ctx.text
-          ?.slice(e.offset, e.offset + e.length)
-          ?.replace('@', '')
-        if (mention) {
-          const u = bipbank.findByUsername(mention)
-          if (u !== null) return { to: u, amount, comment }
-        }
-      }
-    }
-  }
+  const resolved = resolveTarget(ctx)
+  if (resolved.targetId) return { to: resolved.targetId, amount, comment }
 
   const idPart = parts.slice(0, amountIdx).join(' ')
   if (/^\d+$/.test(idPart)) return { to: parseInt(idPart, 10), amount, comment }
@@ -77,16 +64,13 @@ export default (bot: BotType) =>
       }
 
       const r = bipbank.transfer(userId, to, amount, comment || undefined)
-      const name =
-        ctx.replyMessage?.from?.first_name ||
-        ctx.replyMessage?.from?.username ||
-        `user${to}`
+      const name = userName(ctx.replyMessage?.from, to)
 
       const parts: any[] = []
       if (comment) {
-        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}\n📝 "${comment}"`)
+        parts.push(format`💸 ${bold(userName(ctx.from, userId))} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}\n📝 "${comment}"`)
       } else {
-        parts.push(format`💸 ${bold(ctx.from.first_name || ctx.from.username)} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}`)
+        parts.push(format`💸 ${bold(userName(ctx.from, userId))} → ${bold(name)}: ${bold(String(r.received))} ${pluralizeBipki(r.received)}`)
       }
       if (r.fee > 0)
         parts.push(format`\n🔥 Комиссия ${bold(String(r.fee))} сгорела`)
@@ -97,6 +81,6 @@ export default (bot: BotType) =>
         e?.message === 'Insufficient balance'
           ? 'Недостаточно бипок'
           : 'Ошибка перевода'
-      await ctx.reply(msg).catch(() => {})
+      await safeReply(ctx, msg)
     }
   })

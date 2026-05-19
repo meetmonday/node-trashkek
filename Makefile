@@ -30,3 +30,27 @@ env-dump: ## Merge current environment with dotenv file
 run: ## Executes the application launch
 	$(MAKE) container-pull
 	$(MAKE) container-up
+
+backup: ## Create a timestamped backup of the bipki database
+	@if [ -f data/bipki.db ]; then \
+		mkdir -p data/backups; \
+		ts=$$(date +%FT%H-%M-%S); \
+		cp data/bipki.db "data/backups/bipki-$$ts.db"; \
+		cp data/bipki.db-wal "data/backups/bipki-$$ts.db-wal" 2>/dev/null || true; \
+		cp data/bipki.db-shm "data/backups/bipki-$$ts.db-shm" 2>/dev/null || true; \
+		echo "Backup created: data/backups/bipki-$$ts.db"; \
+	else \
+		echo "No database found at data/bipki.db"; \
+	fi
+
+backup-restore: ## Restore the latest backup (usage: make backup-restore FILE=data/backups/bipki-....db)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make backup-restore FILE=data/backups/bipki-XXXX.db"; \
+		exit 22; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "File not found: $(FILE)"; \
+		exit 22; \
+	fi
+	cp "$(FILE)" data/bipki.db
+	echo "Restored from $(FILE)"

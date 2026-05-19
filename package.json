@@ -23,7 +23,8 @@
   "scripts": {
     "start": "bun ./src/index.ts",
     "dev": "bun --watch ./src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test --preload tests/setup.ts"
   },
   "type": "module"
 }

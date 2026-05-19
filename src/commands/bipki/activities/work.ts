@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply, userName } from '@/helpers/shared'
 
 const JOBS = [
   'вынес мусор 🗑️', 'покормил кота 🐱', 'помыл посуду 🍽️',
@@ -37,11 +37,11 @@ export default (bot: BotType) =>
       bipbank.deposit(userId, amount, 'work', job)
       bipbank.updateUser(userId, { last_work: String(Date.now()) })
 
-      const name = ctx.from?.first_name || ctx.from?.username || `user${userId}`
+      const name = userName(ctx.from, userId)
       const coeff = bipbank.stabilizer.coeff
       const econNote = coeff !== 1.0 ? `\n📊 Экономика ×${coeff.toFixed(2)}` : ''
       await ctx.reply(format`💼 ${bold(name)} ${job} и заработал ${bold(String(amount))} ${pluralizeBipki(amount)}!${econNote}`)
     } catch {
-      await ctx.reply('Ошибка').catch(() => {})
+      await safeReply(ctx, 'Ошибка')
     }
   })

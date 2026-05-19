@@ -1,7 +1,7 @@
 import { format, bold } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../..'
-import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
+import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
 
 const ADMIN_IDS = new Set(
   (process.env.ADMIN_IDS || '187365207').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)),
@@ -23,30 +23,10 @@ export default (bot: BotType) =>
       let targetId: number | null = null
       let targetName = ''
 
-      if (ctx.replyMessage?.from) {
-        targetId = ctx.replyMessage.from.id
-        targetName = ctx.replyMessage.from.first_name || ctx.replyMessage.from.username || `user${targetId}`
-      }
-
-      if (ctx.entities) {
-        for (const e of ctx.entities) {
-          if (e.type === 'text_mention' && e.user) {
-            targetId = e.user.id
-            targetName = e.user.first_name || e.user.username || `user${targetId}`
-            break
-          }
-          if (e.type === 'mention') {
-            const mention = ctx.text?.slice(e.offset, e.offset + e.length)?.replace('@', '')
-            if (mention) {
-              const found = bipbank.findByUsername(mention)
-              if (found !== null) {
-                targetId = found
-                targetName = `@${mention}`
-                break
-              }
-            }
-          }
-        }
+      const resolved = resolveTarget(ctx)
+      if (resolved.targetId) {
+        targetId = resolved.targetId
+        targetName = resolved.targetName
       }
 
       if (!targetId) {
@@ -67,9 +47,7 @@ export default (bot: BotType) =>
         }
       }
 
-      if (ctx.replyMessage?.from) {
-        argsStr = argsStr
-      } else if (targetName.startsWith('@')) {
+      if (targetName.startsWith('@')) {
         const parts = argsStr.split(/\s+/)
         if (parts[0]?.startsWith('@')) argsStr = parts.slice(1).join(' ')
       }
@@ -88,7 +66,7 @@ export default (bot: BotType) =>
         return
       }
 
-      const adminName = ctx.from.first_name || ctx.from.username || `user${userId}`
+      const adminName = userName(ctx.from, userId)
 
       if (rawAmount > 0) {
         bipbank.deposit(targetId, rawAmount, 'admin', description)
@@ -107,6 +85,6 @@ export default (bot: BotType) =>
       const msg = e?.message === 'Insufficient balance'
         ? 'Недостаточно бипок у пользователя'
         : (e?.message || 'Ошибка')
-      await ctx.reply(msg).catch(() => {})
+      await safeReply(ctx, msg)
     }
   })

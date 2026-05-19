@@ -1,7 +1,7 @@
 import { format, bold, join } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
-import { ensureBipkiUser } from '@/helpers/shared'
+import { ensureBipkiUser, safeReply, userName, parsePositiveAmount, randomlyDistribute } from '@/helpers/shared'
 
 export async function distributeRain(
   ctx: any,
@@ -22,21 +22,9 @@ export async function distributeRain(
 
     if (others.length < 2) return 'В чате недостаточно пользователей для дождя'
 
-    const shuffled = others.sort(() => Math.random() - 0.5)
-    const count = Math.min(5, shuffled.length)
-    const pick = shuffled.slice(0, count)
+    const recipients = randomlyDistribute(others, pool, Math.min(5, others.length))
+    if (recipients.length < 2) return 'В чате недостаточно пользователей для дождя'
 
-    const shares = new Array(count).fill(0)
-    let rem = pool
-    for (let i = 0; i < count - 1; i++) {
-      const max = rem - (count - i - 1)
-      const s = Math.floor(Math.random() * max) + 1
-      shares[i] = s
-      rem -= s
-    }
-    shares[count - 1] = rem
-
-    const recipients = pick.map((id, i) => ({ userId: id, amount: shares[i]! }))
     bipbank.rainDistribute(userId, recipients, fee)
 
     const items = recipients.map((r) => {
@@ -45,7 +33,7 @@ export async function distributeRain(
       return format`${name}: ${bold(String(r.amount))}`
     })
     const parts = [
-      openingLine ?? format`🌧 ${bold(ctx.from?.first_name || ctx.from?.username || `user${userId}`)} устроил дождь!`,
+      openingLine ?? format`🌧 ${bold(userName(ctx.from, userId))} устроил дождь!`,
       join(items, ', '),
     ]
     if (fee > 0) parts.push(format`\n🔥 ${bold(String(fee))} сгорело в атмосфере`)
@@ -68,20 +56,15 @@ export default (bot: BotType) =>
         return
       }
 
-      if (!ctx.args) {
-        await ctx.reply('🌧 Укажи сумму. /rain 100')
-        return
-      }
-
-      const amount = parseInt(ctx.args.trim(), 10)
-      if (isNaN(amount) || amount <= 0) {
-        await ctx.reply('Сумма должна быть положительным числом')
+      const { amount, error } = parsePositiveAmount(ctx.args)
+      if (error) {
+        await ctx.reply('🌧 ' + error)
         return
       }
 
       const err = await distributeRain(ctx, userId, chatId, amount)
       if (err) await ctx.reply(`🌧 ${err}`)
     } catch (e: any) {
-      await ctx.reply('Ошибка дождя').catch(() => {})
+      await safeReply(ctx, 'Ошибка дождя')
     }
   })
