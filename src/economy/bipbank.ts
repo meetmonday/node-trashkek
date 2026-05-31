@@ -6,6 +6,7 @@ import { Stabilizer } from './stabilizer'
 import { AdminManager } from './admin-manager'
 import { DatabaseManager } from './database-manager'
 import { StatsQueries } from './stats-queries'
+import { HeistManager } from './heist-manager'
 import { TX_TYPE } from './types'
 import type {
   TxType, UserRow, TransactionRow, TopRow, EconomyStats,
@@ -48,11 +49,14 @@ export class BipBank {
     this.stats = new StatsQueries(this.db)
     this.stabilizer = new Stabilizer(() => this.stats.economyStats())
     this.admin = new AdminManager(this.db)
+    this.heist = new HeistManager(this.db)
+    this.heist.initVault()
   }
 
   readonly stabilizer: Stabilizer
   readonly admin: AdminManager
   readonly stats: StatsQueries
+  readonly heist: HeistManager
   private dbManager: DatabaseManager
 
   ensureUser(userId: number): void {
@@ -230,6 +234,7 @@ export class BipBank {
     }
     this.db.meta.clearAll()
     this.stabilizer.reset()
+    this.heist.clear()
   }
 
   findByUsername(username: string): number | null {

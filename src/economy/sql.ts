@@ -261,7 +261,7 @@ export function getAllPools(db: Database): PoolRestore[] {
   ).all() as PoolRestore[]
 }
 
-/** CREATE TABLE IF NOT EXISTS for all 5 tables. */
+/** CREATE TABLE IF NOT EXISTS for all 6 tables. */
 export function initTables(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -311,6 +311,25 @@ export function initTables(db: Database): void {
       PRIMARY KEY (chat_id, pool_id, user_id)
     )
   `)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS meta (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `)
+}
+
+export function getMeta(db: Database, key: string): string | null {
+  const row = db.query('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined
+  return row?.value ?? null
+}
+
+export function setMeta(db: Database, key: string, value: string): void {
+  db.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', [key, value])
+}
+
+export function deleteMeta(db: Database, key: string): void {
+  db.run('DELETE FROM meta WHERE key = ?', [key])
 }
 
 /** One-shot schema migrations. */
@@ -333,6 +352,7 @@ export function clearAll(db: Database): void {
   db.run('DELETE FROM game_pools')
   db.run('DELETE FROM chat_users')
   db.run('DELETE FROM users')
+  db.run('DELETE FROM meta')
 }
 
 // ── Namespaced API ──
@@ -447,6 +467,15 @@ export function createDbApi(db: Database) {
       },
       clearAll(): void {
         clearAll(db)
+      },
+      get(key: string): string | null {
+        return getMeta(db, key)
+      },
+      set(key: string, value: string): void {
+        setMeta(db, key, value)
+      },
+      delete(key: string): void {
+        deleteMeta(db, key)
       },
     },
   }

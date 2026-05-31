@@ -662,6 +662,143 @@ describe("Bipki Commands", () => {
     })
   })
 
+  // ── /crack (heist) ──────────────────────────────────────────────
+  describe("/crack (heist)", () => {
+    it("rejects invalid amount", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 400, first_name: "Cracker" })
+      await user.sendCommand("crack", "abc")
+      expect(textOf(env.apiCalls[0])).toContain("положительную")
+    })
+
+    it("rejects amount above max", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 401, first_name: "BigCrack" })
+      await user.sendCommand("crack", "999")
+      expect(textOf(env.apiCalls[0])).toContain("500")
+    })
+
+    it("rejects insufficient balance for bet", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 402, first_name: "BrokeCrack" })
+      await user.sendCommand("crack", "100")
+      expect(textOf(env.apiCalls[0])).toContain("Недостаточно")
+    })
+
+    it("creates heist with buttons (no bet)", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 403, first_name: "Sneaky" })
+      bipbank.deposit(403, 500, TX_TYPE.admin, "test")
+      await user.sendCommand("crack")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+      expect(msg!.payload.reply_markup).toBeDefined()
+      expect(textOf(env.apiCalls[0])).toContain("ВЗЛОМ")
+    })
+
+    it("creates heist with bet", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 404, first_name: "Bettor" })
+      bipbank.deposit(404, 500, TX_TYPE.admin, "test")
+      await user.sendCommand("crack", "50")
+      expect(textOf(env.apiCalls[0])).toContain("Залог")
+      expect(textOf(env.apiCalls[0])).toContain("50")
+      expect(bipbank.balance(404)).toBe(450)
+    })
+
+    it("rejects when bank is locked", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 405, first_name: "First" })
+      const user2 = env.createUser({ id: 406, first_name: "Second" })
+      bipbank.deposit(405, 500, TX_TYPE.admin, "test")
+      bipbank.deposit(406, 500, TX_TYPE.admin, "test")
+
+      await user.sendCommand("crack")
+      expect(bipbank.heist.isLocked).toBe(true)
+
+      await user2.sendCommand("crack")
+      expect(textOf(env.apiCalls[1])).toContain("Подожди")
+
+      bipbank.heist.releaseLock()
+    })
+
+    it("rejects cooldown", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 407, first_name: "CooldownGuy" })
+      bipbank.deposit(407, 500, TX_TYPE.admin, "test")
+
+      bipbank.heist.setCooldown(407, true)
+      await user.sendCommand("crack")
+      expect(textOf(env.apiCalls[0])).toContain("Нельзя грабить")
+    })
+
+    it("cancel refunds bet", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 408, first_name: "CancelGuy" })
+      bipbank.deposit(408, 500, TX_TYPE.admin, "test")
+      const chat = env.createChat({ type: "supergroup" })
+
+      await user.in(chat).sendCommand("crack", "50")
+      const gameMsg = env.lastBotMessage()
+      expect(gameMsg).toBeDefined()
+      expect(bipbank.balance(408)).toBe(450)
+
+      await user.on(gameMsg!).clickByText('❌ Отмена')
+
+      expect(bipbank.balance(408)).toBe(500)
+      expect(bipbank.heist.isLocked).toBe(false)
+    })
+
+    it("addToVault increases vault", () => {
+      bipbank.clearAll()
+      bipbank.heist.initVault()
+      const before = bipbank.heist.vaultBalance
+      bipbank.heist.addToVault(100)
+      expect(bipbank.heist.vaultBalance).toBe(before + 100)
+    })
+
+    it("addToVault and takeFromVault work", () => {
+      bipbank.clearAll()
+      bipbank.heist.initVault()
+      expect(bipbank.heist.vaultBalance).toBe(0)
+      bipbank.heist.addToVault(5000)
+      expect(bipbank.heist.vaultBalance).toBe(5000)
+      const taken = bipbank.heist.takeFromVault(999999)
+      expect(taken).toBe(5000)
+      expect(bipbank.heist.vaultBalance).toBe(0)
+    })
+
+    it("lock/unlock works", () => {
+      expect(bipbank.heist.acquireLock(999)).toBe(true)
+      expect(bipbank.heist.isLocked).toBe(true)
+      expect(bipbank.heist.acquireLock(888)).toBe(false)
+      bipbank.heist.releaseLock()
+      expect(bipbank.heist.isLocked).toBe(false)
+      expect(bipbank.heist.lockUserId).toBe(null)
+    })
+
+    it("calculate reward formula", () => {
+      const vault = 1000
+      // 3/3 stages → limit = 500 + 200 = 700, base = 1000, min = 700
+      expect(bipbank.heist.calculateReward(vault, 3)).toBe(700)
+      // 2/3 → base = 666, limit = 700, min = 666
+      expect(bipbank.heist.calculateReward(vault, 2)).toBe(666)
+      // 1/3 → base = 333, limit = 700, min = 333
+      expect(bipbank.heist.calculateReward(vault, 1)).toBe(333)
+      // large vault: limit kicks in
+      const bigVault = 10000
+      expect(bipbank.heist.calculateReward(bigVault, 3)).toBe(2500)
+      expect(bipbank.heist.calculateReward(bigVault, 1)).toBe(2500)
+    })
+
+    it("cooldown persists in meta", () => {
+      bipbank.heist.setCooldown(999, true)
+      const cd = bipbank.heist.getCooldown(999)
+      expect(cd).toBeGreaterThan(0)
+      expect(cd).toBeLessThanOrEqual(24 * 60 * 60 * 1000)
+    })
+  })
+
   // ── Stabilizer ──────────────────────────────────────────────────
   describe("Economy stabilizer", () => {
     it("starts at 1.5 for empty economy (stimulation)", () => {
