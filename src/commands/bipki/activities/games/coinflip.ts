@@ -148,6 +148,7 @@ export default (bot: BotType) => {
         bipbank.deposit(userId, payout, TX_TYPE.gambled, `Coinflip win: ${side}`)
         alertText = `🪙 ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'} → ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'}: ВЫИГРАЛ ${payout} ${pluralizeBipki(payout)} (+${payout - game.bet}) | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
       } else {
+        bipbank.heist.addToVault(game.bet)
         const result = side === 'heads' ? '🌿 Решка' : '🦅 Орёл'
         alertText = `🪙 ${sideEmoji} ${side === 'heads' ? 'Орёл' : 'Решка'} → ${result}: ПРОИГРАЛ ${game.bet} ${pluralizeBipki(game.bet)} | Баланс: ${bipbank.balance(userId)} ${pluralizeBipki(bipbank.balance(userId))}`
       }

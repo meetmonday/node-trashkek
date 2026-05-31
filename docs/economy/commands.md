@@ -169,7 +169,9 @@ House edge: 0%
   ceiling = max(MAX(balance FROM users WHERE user_id != грабитель), 2000)
   reward = min(floor(base), limit, ceiling)
 
-В банк (vault) попадают залоги проваливших ограбление.
+В банк (vault) попадают:
+  - залоги проваливших ограбление
+  - проигранные ставки в слоты/кости/монетку
 ```
 
 ## /ngbet — призовой пул NaganBet
