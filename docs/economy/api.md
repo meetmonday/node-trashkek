@@ -242,6 +242,40 @@ interface EconomyStats {
 }
 ```
 
+## Weekly Arena (ArenaManager)
+
+Еженедельный зачёт по net-выигрышам в азартные игры (coinflip, dice, slots). Призовой фонд — vault.
+
+```ts
+bipbank.arena.addScore(chatId: number, userId: number, netDelta: number): ArenaEvent | null
+bipbank.arena.getTop(chatId: number, limit?: number): { userId: number; score: number }[]
+bipbank.arena.getUserScore(chatId: number, userId: number): number
+bipbank.arena.getWeekLabel(): string
+bipbank.arena.distributePrizes(chatId: number): { userId: number; amount: number }[] | null
+bipbank.arena.tick(): ArenaEvent[]
+```
+
+- `addScore` — вызывается из игр после каждого раунда. `netDelta = payout − bet`.
+  Возвращает `ArenaEvent | null`:
+  - `takeover` — сменился лидер
+  - `leader_hold` — лидер держится 3+ дня
+- `tick` — зовётся раз в час планировщиком. Проверяет смену недели:
+  - `week_end` + `distributePrizes` по всем чатам
+  - `week_start` — новая неделя
+- Награда: `min(vault, 500)`, доли 50%/30%/20% топ-3.
+- Никакой эмиссии — призы из heist vault.
+- Очки сбрасываются каждую неделю (очистка `arena_scores`).
+
+```ts
+interface ArenaEvent {
+  chatId: number
+  type: 'takeover' | 'week_start' | 'week_end' | 'leader_hold'
+  week: string
+  top: { userId: number; score: number }[]
+  prizes?: { userId: number; amount: number }[]
+}
+```
+
 `economyStats().totalBurned` и `totalBurned()` идентичны.
 
 ## Админ-транзакции

@@ -8,6 +8,7 @@ import { DatabaseManager } from './database-manager'
 import { StatsQueries } from './stats-queries'
 import { HeistManager } from './heist-manager'
 import { CharityManager } from './charity-manager'
+import { ArenaManager } from './arena-manager'
 import { TX_TYPE } from './types'
 import type {
   TxType, UserRow, TransactionRow, TopRow, EconomyStats,
@@ -54,6 +55,8 @@ export class BipBank {
     this.heist.initVault()
     this.charity = new CharityManager(this.db)
     this.charity.startScheduler()
+    this.arena = new ArenaManager(this.db, this.heist)
+    this.arena.startScheduler()
   }
 
   readonly stabilizer: Stabilizer
@@ -61,6 +64,7 @@ export class BipBank {
   readonly stats: StatsQueries
   readonly heist: HeistManager
   readonly charity: CharityManager
+  readonly arena: ArenaManager
   private dbManager: DatabaseManager
 
   ensureUser(userId: number): void {
@@ -250,6 +254,7 @@ export class BipBank {
       throw new Error('clearAll() is only available on in-memory databases')
     }
     this.charity.stopScheduler()
+    this.arena.stopScheduler()
     this.db.meta.clearAll()
     this.stabilizer.reset()
     this.heist.clear()
@@ -261,6 +266,7 @@ export class BipBank {
 
   close(): void {
     this.charity.stopScheduler()
+    this.arena.stopScheduler()
     try {
       this.rawDb.exec('PRAGMA wal_checkpoint(TRUNCATE)')
     } catch {

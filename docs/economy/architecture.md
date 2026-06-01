@@ -19,6 +19,9 @@ BipBank (bipbank.ts)
 ├── AdminManager              ← admin.*
 ├── StatsQueries              ← stats.*
 ├── DatabaseManager           ← backupDb
+├── HeistManager              ← heist vault + gambling loss
+├── CharityManager            ← налог на богатство
+├── ArenaManager              ← еженедельный зачёт по играм
 └── core methods              ← balance, deposit, withdraw, transfer, burn,
                                 rainDistribute, getUser, updateUser,
                                 setUsername, findByUsername, clearAll, close

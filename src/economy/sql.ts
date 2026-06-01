@@ -9,6 +9,11 @@ export interface PoolParticipant {
   amount: number
 }
 
+export interface ArenaScoreRow {
+  user_id: number
+  score: number
+}
+
 export interface PoolRestore {
   chat_id: number
   pool_id: string
@@ -318,6 +323,15 @@ export function initTables(db: Database): void {
       value TEXT NOT NULL
     )
   `)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS arena_scores (
+      chat_id    INTEGER NOT NULL,
+      user_id    INTEGER NOT NULL,
+      score      INTEGER NOT NULL DEFAULT 0,
+      week_start TEXT NOT NULL,
+      PRIMARY KEY (chat_id, user_id, week_start)
+    )
+  `)
   db.run('CREATE INDEX IF NOT EXISTS idx_tx_created_at ON transactions(created_at)')
   db.run('CREATE INDEX IF NOT EXISTS idx_tx_type_created_at ON transactions(type, created_at)')
   db.run('CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance)')
@@ -334,6 +348,37 @@ export function setMeta(db: Database, key: string, value: string): void {
 
 export function deleteMeta(db: Database, key: string): void {
   db.run('DELETE FROM meta WHERE key = ?', [key])
+}
+
+export function getArenaTop(db: Database, chatId: number, week: string, limit = 10): ArenaScoreRow[] {
+  return db.query(
+    'SELECT user_id, score FROM arena_scores WHERE chat_id = ? AND week_start = ? ORDER BY score DESC LIMIT ?',
+  ).all(chatId, week, limit) as ArenaScoreRow[]
+}
+
+export function upsertArenaScore(db: Database, chatId: number, userId: number, score: number, week: string): void {
+  db.run(
+    `INSERT INTO arena_scores (chat_id, user_id, score, week_start) VALUES (?, ?, ?, ?)
+     ON CONFLICT(chat_id, user_id, week_start) DO UPDATE SET score = score + ?`,
+    [chatId, userId, score, week, score],
+  )
+}
+
+export function deleteArenaWeek(db: Database, week: string): void {
+  db.run('DELETE FROM arena_scores WHERE week_start = ?', [week])
+}
+
+export function getArenaChats(db: Database, week: string): number[] {
+  return (db.query(
+    'SELECT DISTINCT chat_id FROM arena_scores WHERE week_start = ?',
+  ).all(week) as { chat_id: number }[]).map(r => r.chat_id)
+}
+
+export function getArenaScoreByChat(db: Database, chatId: number, week: string): number {
+  const row = db.query(
+    'SELECT COALESCE(MAX(score), 0) as score FROM arena_scores WHERE chat_id = ? AND week_start = ?',
+  ).get(chatId, week) as { score: number } | undefined
+  return row?.score ?? 0
 }
 
 /** One-shot schema migrations. */
@@ -360,6 +405,7 @@ export function clearAll(db: Database): void {
   db.run('DELETE FROM chat_users')
   db.run('DELETE FROM users')
   db.run('DELETE FROM meta')
+  db.run('DELETE FROM arena_scores')
 }
 
 // ── Namespaced API ──
@@ -483,6 +529,24 @@ export function createDbApi(db: Database) {
       },
       delete(key: string): void {
         deleteMeta(db, key)
+      },
+    },
+
+    arena: {
+      top(chatId: number, week: string, limit = 10): ArenaScoreRow[] {
+        return getArenaTop(db, chatId, week, limit)
+      },
+      upsertScore(chatId: number, userId: number, score: number, week: string): void {
+        upsertArenaScore(db, chatId, userId, score, week)
+      },
+      deleteWeek(week: string): void {
+        deleteArenaWeek(db, week)
+      },
+      chats(week: string): number[] {
+        return getArenaChats(db, week)
+      },
+      chatScore(chatId: number, week: string): number {
+        return getArenaScoreByChat(db, chatId, week)
       },
     },
   }

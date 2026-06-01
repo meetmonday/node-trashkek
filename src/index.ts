@@ -1,4 +1,4 @@
-import { Bot } from "gramio";
+import { bold, Bot } from "gramio";
 import { autoload } from "@gramio/autoload";
 import { autoRetry } from "@gramio/auto-retry";
 import { rateLimit } from "@gramio/rate-limit";
@@ -19,7 +19,31 @@ const bot = new Bot(token)
   )
   .extend(autoRetry())
   .extend(await autoload())
-  .onStart(({ info }) => console.log(`Running as @${info.username}`));
+  .onStart(async ({ info }) => {
+    console.log(`Running as @${info.username}`);
+
+    const { bipbank } = await import('@/economy');
+    bipbank.arena.onEvent = (event) => {
+      if (event.type === 'week_start') {
+        if (event.chatId === 0) return
+        bot.api.sendMessage({
+          chat_id: event.chatId,
+          text: '🏟️ Новая неделя Арены! Ставки и выигрывай, чтобы занять топ!',
+        }).catch(() => {})
+      }
+
+      if (event.type === 'week_end' && event.prizes) {
+        const lines = [`🏟️ Неделя ${event.week} завершена!`]
+        for (let i = 0; i < event.top.length && i < event.prizes.length; i++) {
+          const t = event.top[i]
+          const p = event.prizes[i]
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
+          lines.push(`${medal} ${bold(`user${t.userId}`)} — ${bold(String(t.score))} бипок | +${bold(String(p.amount))} 🪙`)
+        }
+        bot.api.sendMessage({ chat_id: event.chatId, text: lines.join('\n'), parse_mode: 'HTML' }).catch(() => {})
+      }
+    };
+  });
 
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);

@@ -1,3 +1,4 @@
+import { format, bold } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki, userName } from '@/helpers/shared'
@@ -145,6 +146,8 @@ export default (bot: BotType) => {
         bipbank.heist.processGamblingLoss(game.bet)
       }
 
+      const arenaEvent = bipbank.arena.addScore(chatId, userId, payout - game.bet)
+
       game.log.push({
         name,
         display: result.display,
@@ -154,6 +157,13 @@ export default (bot: BotType) => {
       })
       if (game.log.length > MAX_LOG + 10) {
         game.log.splice(0, game.log.length - MAX_LOG)
+      }
+
+      if (arenaEvent) {
+        const msg = arenaEvent.type === 'takeover'
+          ? format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} выходит в лидеры Арены — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
+          : format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} удерживает лидерство 3 дня — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
+        await ctx.reply(msg).catch(() => {})
       }
 
       await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })

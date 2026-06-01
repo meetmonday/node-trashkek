@@ -49,6 +49,14 @@ game_pools (
   amount  INTEGER NOT NULL,
   PRIMARY KEY (chat_id, pool_id, user_id)
 )
+
+arena_scores (
+  chat_id    INTEGER NOT NULL,
+  user_id    INTEGER NOT NULL,
+  score      INTEGER NOT NULL DEFAULT 0,
+  week_start TEXT    NOT NULL,
+  PRIMARY KEY (chat_id, user_id, week_start)
+)
 ```
 
 ## TxType — числовые константы
@@ -104,6 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance);
 - `insertTx`, `getHistory`, `getAdminTxs`, `getTotalBurned`, `getEconomyStats`
 - `getTop`, `ensureChatUser`, `getChatUserIds`
 - `upsertPoolContribution`, `getPoolParticipants`, `getPoolTotalRaw`, `deletePool`, `getAllPools`
+- `getArenaTop`, `upsertArenaScore`, `deleteArenaWeek`, `getArenaChats`, `getArenaScoreByChat`
 - `initTables`, `migrateSchema`, `clearAll`
 
 ### Неймспейс-обёртка `createDbApi(db)`
@@ -146,6 +155,12 @@ db.burned.add(userId, amount)
 db.meta.initTables()
 db.meta.migrate()
 db.meta.clearAll()
+
+db.arena.top(chatId, week, limit?)      // → ArenaScoreRow[]
+db.arena.upsertScore(chatId, userId, score, week)  // INSERT ON CONFLICT
+db.arena.deleteWeek(week)               // очистка прошедшей недели
+db.arena.chats(week)                    // → number[] (chat_id с очками за неделю)
+db.arena.chatScore(chatId, week)        // → number (макс. очко в чате за неделю)
 
 db.raw                              // bun:sqlite Database (escape hatch)
 db.transaction(() => { ... })       // SQLite transaction
