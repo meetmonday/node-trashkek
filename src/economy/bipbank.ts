@@ -7,6 +7,7 @@ import { AdminManager } from './admin-manager'
 import { DatabaseManager } from './database-manager'
 import { StatsQueries } from './stats-queries'
 import { HeistManager } from './heist-manager'
+import { CharityManager } from './charity-manager'
 import { TX_TYPE } from './types'
 import type {
   TxType, UserRow, TransactionRow, TopRow, EconomyStats,
@@ -51,12 +52,15 @@ export class BipBank {
     this.admin = new AdminManager(this.db)
     this.heist = new HeistManager(this.db)
     this.heist.initVault()
+    this.charity = new CharityManager(this.db)
+    this.charity.startScheduler()
   }
 
   readonly stabilizer: Stabilizer
   readonly admin: AdminManager
   readonly stats: StatsQueries
   readonly heist: HeistManager
+  readonly charity: CharityManager
   private dbManager: DatabaseManager
 
   ensureUser(userId: number): void {
@@ -74,14 +78,29 @@ export class BipBank {
     type: number,
     description?: string,
     systemDescription = true,
-  ): void {
+  ): number {
     if (amount <= 0) throw new Error('Amount must be positive')
     this.ensureUser(to)
 
+    const penalty = this.charity.calculateIncomePenalty(to, amount, type)
+    let effectiveAmount = amount - penalty
+    if (type === TX_TYPE.work || type === TX_TYPE.daily) {
+      const personalCoeff = this.charity.getPersonalCoeff(to)
+      effectiveAmount = Math.round(effectiveAmount * personalCoeff)
+    }
+
+    if (effectiveAmount <= 0) return 0
+
     this.db.transaction(() => {
-      this.db.balance.add(to, amount)
-      this.db.transactions.insert({ to_user_id: to, amount, type, description, systemDescription })
+      this.db.balance.add(to, effectiveAmount)
+      this.db.transactions.insert({ to_user_id: to, amount: effectiveAmount, type, description, systemDescription })
+      if (penalty > 0) {
+        const currentVault = parseInt(this.db.meta.get('charity_balance') ?? '0', 10)
+        this.db.meta.set('charity_balance', String(currentVault + penalty))
+        this.db.transactions.insert({ from_user_id: to, amount: penalty, type: TX_TYPE.charity, description: 'income penalty (charity disabled)' })
+      }
     })
+    return effectiveAmount
   }
 
   withdraw(
@@ -201,7 +220,7 @@ export class BipBank {
   updateUser(
     userId: number,
     updates: Partial<
-      Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username'>
+      Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username' | 'charity_rate'>
     >,
   ): void {
     this.db.users.update(userId, updates)
@@ -232,6 +251,7 @@ export class BipBank {
     if (this.dbPath !== ':memory:') {
       throw new Error('clearAll() is only available on in-memory databases')
     }
+    this.charity.stopScheduler()
     this.db.meta.clearAll()
     this.stabilizer.reset()
     this.heist.clear()
@@ -242,6 +262,7 @@ export class BipBank {
   }
 
   close(): void {
+    this.charity.stopScheduler()
     try {
       this.rawDb.exec('PRAGMA wal_checkpoint(TRUNCATE)')
     } catch {

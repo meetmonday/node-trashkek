@@ -56,7 +56,7 @@ export default (bot: BotType) =>
       const bonus = roll()
       const total = base + bonus
 
-      bipbank.deposit(userId, total, TX_TYPE.daily, `Streak: ${streak}`)
+      const received = bipbank.deposit(userId, total, TX_TYPE.daily, `Streak: ${streak}`)
       bipbank.updateUser(userId, { streak, last_daily: today })
 
       const parts = [format`🎁 Ежедневный бонус: ${bold(String(base))}`]
@@ -64,9 +64,12 @@ export default (bot: BotType) =>
         const e = bonus >= 85 ? '💥' : bonus >= 45 ? '✨' : '🌟'
         parts.push(format` + ${e}${bold(String(bonus))}`)
       }
-      parts.push(format` = ${bold(String(total))} ${pluralizeBipki(total)}! (Streak: ${String(streak)})`)
+      parts.push(format` = ${bold(String(received))} ${pluralizeBipki(received)}! (Streak: ${String(streak)})`)
       const coeff = bipbank.stabilizer.coeff
       if (coeff !== 1.0) parts.push(format`\n📊 Экономика ×${coeff.toFixed(2)}`)
+      const pCoeff = bipbank.charity.getPersonalCoeff(userId)
+      if (pCoeff > 1.0) parts.push(format`\n❤️ Благотворительность +${Math.round((pCoeff - 1) * 100)}%`)
+      else if (bipbank.charity.getRate(userId) === 0) parts.push(format`\n🚫 Благотворительность отключена — доход урезан в 3 раза`)
 
       await ctx.reply(join(parts, ''))
     } catch {

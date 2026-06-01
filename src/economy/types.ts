@@ -8,9 +8,10 @@ export const TX_TYPE = {
   admin: 6,
   fee: 7,
   gambled: 8,
+  charity: 9,
 } as const
 
-/** Numeric transaction type (1–8). */
+/** Numeric transaction type (1–9). */
 export type TxType = (typeof TX_TYPE)[keyof typeof TX_TYPE]
 
 /** Reverse lookup: numeric TxType → human-readable name. */
@@ -27,7 +28,16 @@ const TX_TYPE_NAME: Record<number, string> = {
   [TX_TYPE.admin]: 'admin',
   [TX_TYPE.fee]: 'fee',
   [TX_TYPE.gambled]: 'gambled',
+  [TX_TYPE.charity]: 'charity',
 }
+
+export interface CharityCollectResult {
+  totalCollected: number
+  payerCount: number
+}
+
+export const CHARITY_BOOST_RATIO = 0.05
+export const MIN_BALANCE_FOR_WITHDRAW = 100
 
 /** Full row from the `users` table. */
 export interface UserRow {
@@ -38,6 +48,7 @@ export interface UserRow {
   last_work: string | null
   total_burned: number
   username: string | null
+  charity_rate: number
   created_at: string
   updated_at: string
 }

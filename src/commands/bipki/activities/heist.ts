@@ -202,7 +202,7 @@ export default (bot: BotType) => {
       const vault = heist.vaultBalance
 
       const sent = await ctx.reply(
-        renderHeist({ chatId: ctx.chat.id, messageId: 0, userId, userName: name, bet, stages: [] }, vault),
+        renderHeist({ chatId: ctx.chat.id, messageId: 0, userId, userName: name, bet, stages: [], startedAt: Date.now() }, vault),
         { reply_markup: stageKeyboard(1) },
       )
       const msgId = sent?.id

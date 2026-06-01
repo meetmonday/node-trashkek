@@ -929,3 +929,213 @@ describe("Bipki Commands", () => {
     })
   })
 })
+
+// ── /charity ──────────────────────────────────────────────────────
+describe("/charity", () => {
+  beforeEach(() => { bipbank.clearAll() })
+
+  describe("CharityManager.collect", () => {
+    it("takes 1% from users above average balance", () => {
+      bipbank.deposit(900, 1000, TX_TYPE.admin, "test")
+      bipbank.deposit(901, 10, TX_TYPE.admin, "test")
+      const result = bipbank.charity.collect()
+      expect(result.payerCount).toBe(1)
+      expect(result.totalCollected).toBe(10)
+      expect(bipbank.balance(900)).toBe(990)
+      expect(bipbank.balance(901)).toBe(10)
+      expect(bipbank.charity.bankBalance).toBe(10)
+    })
+
+    it("skips users with charity_rate = 0", () => {
+      bipbank.deposit(910, 1000, TX_TYPE.admin, "test")
+      bipbank.deposit(911, 10, TX_TYPE.admin, "test")
+      bipbank.charity.setRate(910, 0)
+      const result = bipbank.charity.collect()
+      expect(result.payerCount).toBe(0)
+      expect(result.totalCollected).toBe(0)
+      expect(bipbank.balance(910)).toBe(1000)
+    })
+
+    it("respects custom charity rates", () => {
+      bipbank.deposit(920, 1000, TX_TYPE.admin, "test")
+      bipbank.deposit(921, 10, TX_TYPE.admin, "test")
+      bipbank.updateUser(920, { charity_rate: 5 })
+      const result = bipbank.charity.collect()
+      expect(result.payerCount).toBe(1)
+      expect(result.totalCollected).toBe(50)
+      expect(bipbank.balance(920)).toBe(950)
+    })
+
+    it("marks collection date in meta", () => {
+      bipbank.deposit(930, 100, TX_TYPE.admin, "test")
+      bipbank.deposit(931, 10, TX_TYPE.admin, "test")
+      expect(bipbank.charity.isCollectionDue()).toBe(true)
+      bipbank.charity.collect()
+      expect(bipbank.charity.isCollectionDue()).toBe(false)
+    })
+
+    it("collects from multiple rich users", () => {
+      bipbank.deposit(940, 500, TX_TYPE.admin, "test")
+      bipbank.deposit(941, 400, TX_TYPE.admin, "test")
+      bipbank.deposit(942, 10, TX_TYPE.admin, "test")
+      const result = bipbank.charity.collect()
+      expect(result.payerCount).toBe(2)
+      expect(result.totalCollected).toBe(9)
+    })
+  })
+
+  describe("CharityManager income penalty", () => {
+    it("penalizes user with rate=0: 2/3 to vault", () => {
+      bipbank.deposit(950, 100, TX_TYPE.admin, "test")
+      bipbank.updateUser(950, { charity_rate: 0 })
+      bipbank.deposit(950, 90, TX_TYPE.work, "test job")
+      expect(bipbank.balance(950)).toBe(130) // 100 + 90/3
+      expect(bipbank.charity.bankBalance).toBe(60) // 90*2/3
+    })
+
+    it("does not penalize user with rate=1", () => {
+      bipbank.deposit(951, 100, TX_TYPE.admin, "test")
+      bipbank.deposit(951, 90, TX_TYPE.work, "test job")
+      expect(bipbank.balance(951)).toBe(190)
+      expect(bipbank.charity.bankBalance).toBe(0)
+    })
+  })
+
+  describe("CharityManager personal coefficient", () => {
+    it("rate=2 gives 1.05 personal coeff", () => {
+      bipbank.ensureUser(960)
+      bipbank.updateUser(960, { charity_rate: 2 })
+      bipbank.deposit(960, 90, TX_TYPE.work, "test job")
+      expect(bipbank.balance(960)).toBe(95) // round(90 * 1.05)
+    })
+
+    it("rate=5 gives 1.20 personal coeff", () => {
+      bipbank.ensureUser(961)
+      bipbank.updateUser(961, { charity_rate: 5 })
+      bipbank.deposit(961, 100, TX_TYPE.work, "test job")
+      expect(bipbank.balance(961)).toBe(120) // round(100 * 1.20)
+    })
+
+    it("rate=1 gives no boost", () => {
+      bipbank.deposit(962, 100, TX_TYPE.work, "test job")
+      expect(bipbank.balance(962)).toBe(100)
+    })
+  })
+
+  describe("CharityManager withdraw", () => {
+    it("allows poor user to withdraw quarter", () => {
+      bipbank.deposit(970, 50, TX_TYPE.admin, "test")
+      bipbank.charity.addToBank(1000)
+      const taken = bipbank.charity.withdraw(970, 'quarter')
+      expect(taken).toBe(250)
+      expect(bipbank.balance(970)).toBe(300)
+      expect(bipbank.charity.bankBalance).toBe(750)
+    })
+
+    it("allows poor user to withdraw half", () => {
+      bipbank.deposit(971, 50, TX_TYPE.admin, "test")
+      bipbank.charity.addToBank(1000)
+      const taken = bipbank.charity.withdraw(971, 'half')
+      expect(taken).toBe(500)
+      expect(bipbank.balance(971)).toBe(550)
+    })
+
+    it("allows poor user to withdraw 90%", () => {
+      bipbank.deposit(972, 50, TX_TYPE.admin, "test")
+      bipbank.charity.addToBank(1000)
+      const taken = bipbank.charity.withdraw(972, 'ninety')
+      expect(taken).toBe(900)
+      expect(bipbank.balance(972)).toBe(950)
+      expect(bipbank.charity.bankBalance).toBe(100)
+    })
+
+    it("rejects rich user", () => {
+      bipbank.deposit(973, 150, TX_TYPE.admin, "test")
+      expect(() => bipbank.charity.withdraw(973, 'quarter')).toThrow()
+    })
+
+    it("enforces daily cooldown", () => {
+      bipbank.deposit(974, 50, TX_TYPE.admin, "test")
+      bipbank.charity.addToBank(1000)
+      bipbank.charity.withdraw(974, 'quarter')
+      expect(() => bipbank.charity.withdraw(974, 'quarter')).toThrow()
+    })
+  })
+
+  describe("CharityManager.setRate / getRate", () => {
+    it("returns default rate 1 for new user", () => {
+      bipbank.ensureUser(980)
+      expect(bipbank.charity.getRate(980)).toBe(1)
+    })
+
+    it("persists rate changes via setRate", () => {
+      bipbank.ensureUser(981)
+      bipbank.charity.setRate(981, 0)
+      expect(bipbank.charity.getRate(981)).toBe(0)
+      bipbank.charity.setRate(981, 5)
+      expect(bipbank.charity.getRate(981)).toBe(5)
+    })
+
+    it("persists rate changes via updateUser", () => {
+      bipbank.ensureUser(982)
+      bipbank.updateUser(982, { charity_rate: 0 })
+      const row = bipbank.getUser(982)
+      console.log("charity_rate via getUser:", row.charity_rate)
+      const rate = bipbank.charity.getRate(982)
+      console.log("charity_rate via getRate:", rate)
+      expect(rate).toBe(0)
+    })
+  })
+
+  describe("/charity command", () => {
+    it("shows charity menu", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 990, first_name: "CharityUser" })
+      await user.sendCommand("charity")
+      expect(textOf(env.apiCalls[0])).toContain("БЛАГОТВОРИТЕЛЬНОСТЬ")
+      expect(textOf(env.apiCalls[0])).toContain("1%")
+    })
+
+    it("changes rate via button click", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 991, first_name: "RateChanger" })
+      await user.sendCommand("charity")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+      expect(bipbank.charity.getRate(991)).toBe(1)
+
+      await user.on(msg!).clickByText('5%')
+
+      expect(bipbank.charity.getRate(991)).toBe(5)
+      const edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain("5%")
+    })
+
+    it("shows withdraw buttons for poor user", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 992, first_name: "PoorCharity" })
+      bipbank.deposit(992, 50, TX_TYPE.admin, "test")
+      await user.sendCommand("charity")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+      const buttons = msg!.payload.reply_markup?.inline_keyboard?.flat() ?? []
+      expect(buttons.some((b: any) => b.text.includes('25%'))).toBe(true)
+    })
+
+    it("withdraws via button for poor user", async () => {
+      const env = new TelegramTestEnvironment(bot)
+      const user = env.createUser({ id: 993, first_name: "Withdrawer" })
+      bipbank.deposit(993, 50, TX_TYPE.admin, "test")
+      bipbank.charity.addToBank(1000)
+      await user.sendCommand("charity")
+      const msg = env.lastBotMessage()
+      expect(msg).toBeDefined()
+
+      await user.on(msg!).clickByText('25% 🏦')
+
+      expect(bipbank.balance(993)).toBe(300)
+      const edited = env.lastApiCall('editMessageText')
+      expect(edited?.params?.text).toContain("250")
+    })
+  })
+})

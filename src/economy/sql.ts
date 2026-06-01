@@ -52,7 +52,7 @@ export function findUserIdByUsername(db: Database, username: string): number | n
 export function updateUser(
   db: Database,
   userId: number,
-  fields: Partial<Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username'>>,
+  fields: Partial<Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username' | 'charity_rate'>>,
 ): void {
   const keys = Object.keys(fields) as (keyof typeof fields)[]
   if (keys.length === 0) return
@@ -338,6 +338,9 @@ export function migrateSchema(db: Database): void {
     db.run('ALTER TABLE users ADD COLUMN username TEXT')
   } catch {}
   try {
+    db.run('ALTER TABLE users ADD COLUMN charity_rate INTEGER NOT NULL DEFAULT 1')
+  } catch {}
+  try {
     db.run('ALTER TABLE transactions ADD COLUMN description_id INTEGER REFERENCES descriptions(id)')
   } catch {}
   try {
@@ -389,7 +392,7 @@ export function createDbApi(db: Database) {
       },
       update(
         userId: number,
-        fields: Partial<Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username'>>,
+        fields: Partial<Pick<UserRow, 'streak' | 'last_daily' | 'last_work' | 'username' | 'charity_rate'>>,
       ): void {
         updateUser(db, userId, fields)
       },

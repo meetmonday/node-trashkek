@@ -77,12 +77,12 @@ export class HeistManager {
   }
 
   maxUserBalance(excludeUserId?: number): number {
-    const row = this.db.raw.query(
-      excludeUserId
-        ? 'SELECT MAX(balance) as m FROM users WHERE user_id != ?'
-        : 'SELECT MAX(balance) as m FROM users',
-      excludeUserId ? [excludeUserId] : [],
-    ).get() as { m: number | null } | undefined
+    const sql = excludeUserId
+      ? 'SELECT MAX(balance) as m FROM users WHERE user_id != ?'
+      : 'SELECT MAX(balance) as m FROM users'
+    const row = (excludeUserId
+      ? this.db.raw.query(sql).get(excludeUserId)
+      : this.db.raw.query(sql).get()) as { m: number | null } | undefined
     return row?.m ?? 0
   }
 

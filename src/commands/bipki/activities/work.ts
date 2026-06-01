@@ -1,4 +1,4 @@
-import { format, bold } from 'gramio'
+import { format, bold, join } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName } from '@/helpers/shared'
@@ -34,13 +34,17 @@ export default (bot: BotType) =>
       const amount = bipbank.stabilizer.getWorkAmount()
       const job = JOBS[Math.floor(Math.random() * JOBS.length)]
 
-      bipbank.deposit(userId, amount, TX_TYPE.work, job)
+      const received = bipbank.deposit(userId, amount, TX_TYPE.work, job)
       bipbank.updateUser(userId, { last_work: String(Date.now()) })
 
       const name = userName(ctx.from, userId)
+      const parts = [format`💼 ${bold(name)} ${job} и заработал ${bold(String(received))} ${pluralizeBipki(received)}!`]
       const coeff = bipbank.stabilizer.coeff
-      const econNote = coeff !== 1.0 ? `\n📊 Экономика ×${coeff.toFixed(2)}` : ''
-      await ctx.reply(format`💼 ${bold(name)} ${job} и заработал ${bold(String(amount))} ${pluralizeBipki(amount)}!${econNote}`)
+      if (coeff !== 1.0) parts.push(format`\n📊 Экономика ×${coeff.toFixed(2)}`)
+      const pCoeff = bipbank.charity.getPersonalCoeff(userId)
+      if (pCoeff > 1.0) parts.push(format`\n❤️ Благотворительность +${Math.round((pCoeff - 1) * 100)}%`)
+      else if (bipbank.charity.getRate(userId) === 0) parts.push(format`\n🚫 Благотворительность отключена — доход урезан в 3 раза`)
+      await ctx.reply(join(parts, ''))
     } catch {
       await safeReply(ctx, 'Ошибка')
     }
