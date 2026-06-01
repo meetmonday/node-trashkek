@@ -105,7 +105,7 @@ interface RainDistributeResult {
 
 ## Стабилизатор экономики
 
-Автоматически регулирует выплаты `/work` и `/daily` в зависимости от `totalSupply`.
+Автоматически регулирует выплаты `/work` и `/daily` в зависимости от `supplyCapped` — суммы балансов всех пользователей, урезанной до 4000 бипок на каждого (защита от whales).
 
 ```ts
 bipbank.stabilizer.coeff: number              // текущий коэффициент [0.5, 1.5]
@@ -116,14 +116,20 @@ bipbank.stabilizer.getDailyBaseAmount(streak): number  // round(10 * coeff) + ST
 Формула:
 
 ```
-activeUsers  = COUNT(DISTINCT user_id в транзакциях за 7 дней)
-inactiveUsers = userCount - activeUsers
-targetSupply = 2000 × max(1, activeUsers) + 500 × inactiveUsers
-total        = userCount > 0 ? totalSupply : 0
-ratio        = total / targetSupply - 1
-coeff        = clamp(1.0 - ratio, 0.5, 1.5)   // пересчёт раз в 6ч
+activeUsers    = COUNT(DISTINCT user_id в транзакциях за 7 дней)
+inactiveUsers  = userCount - activeUsers
+targetSupply   = 2000 × max(1, activeUsers) + 500 × inactiveUsers
+effectiveTotal = userCount > 0 ? supplyCapped : 0
+ratio          = effectiveTotal / targetSupply - 1
+rawCoeff       = clamp(1.0 - ratio, 0.5, 1.5)
+smoothCoeff   += (rawCoeff - smoothCoeff) × 0.3   // EMA-сглаживание
+coeff          = clamp(smoothCoeff, 0.5, 1.5)      // пересчёт раз в 6ч
 ```
 
+Где `supplyCapped` = `SUM(MIN(balance, 4000))` — каждый пользователь вносит в стабилизатор не более 4000 бипок, что предотвращает искажение экономики одним богатым игроком.
+
+- Первый пересчёт после старта использует `rawCoeff` напрямую (без сглаживания).
+- EMA-фактор 0.3: при резком скачке coeff достигает нового значения за ~4 пересчёта (24ч).
 - Streak bonus не режется коэффициентом.
 - При coeff ≠ 1 команды показывают уведомление.
 - Guard `userCount > 0` предотвращает деление на ноль.
@@ -221,6 +227,7 @@ bipbank.economyStats(): EconomyStats
 ```ts
 interface EconomyStats {
   totalSupply: number        // SUM(balance)
+  supplyCapped: number       // SUM(MIN(balance, 4000)) — без учёта whales
   userCount: number
   activeUsers: number        // COUNT(DISTINCT user_id в tx за 7d)
   totalTransactions: number

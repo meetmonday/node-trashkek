@@ -90,6 +90,7 @@ export interface RainDistributeResult {
 /** Aggregate economy statistics. */
 export interface EconomyStats {
   totalSupply: number
+  supplyCapped: number
   userCount: number
   activeUsers: number
   totalTransactions: number

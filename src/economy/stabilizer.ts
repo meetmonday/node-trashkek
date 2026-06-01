@@ -3,8 +3,10 @@ import type { EconomyStats } from './types'
 
 export class Stabilizer {
   private _coeff = 1.0
+  private _smoothCoeff = 1.0
   private _lastAt = 0
   private readonly _interval = 21_600_000
+  private readonly _smoothing = 0.3
 
   constructor(
     private getStats: () => EconomyStats,
@@ -15,9 +17,18 @@ export class Stabilizer {
     const activeUsers = s.activeUsers || 0
     const inactiveUsers = Math.max(0, s.userCount - activeUsers)
     const targetSupply = 2000 * Math.max(1, activeUsers) + 500 * inactiveUsers
-    const total = s.userCount > 0 ? s.totalSupply : 0
+    const total = s.userCount > 0 ? s.supplyCapped : 0
     const ratio = total / targetSupply - 1
-    this._coeff = Math.max(0.5, Math.min(1.5, 1.0 - ratio))
+    const raw = Math.max(0.5, Math.min(1.5, 1.0 - ratio))
+
+    if (this._lastAt === 0) {
+      this._coeff = raw
+      this._smoothCoeff = raw
+    } else {
+      this._smoothCoeff = this._smoothCoeff * (1 - this._smoothing) + raw * this._smoothing
+      this._coeff = Math.max(0.5, Math.min(1.5, this._smoothCoeff))
+    }
+
     this._lastAt = Date.now()
   }
 
@@ -41,6 +52,7 @@ export class Stabilizer {
 
   reset(): void {
     this._coeff = 1.0
+    this._smoothCoeff = 1.0
     this._lastAt = 0
   }
 }

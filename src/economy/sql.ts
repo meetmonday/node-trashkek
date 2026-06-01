@@ -167,6 +167,7 @@ export function getEconomyStats(db: Database): EconomyStats {
   return db.query(`
     SELECT
       (SELECT COALESCE(SUM(balance), 0) FROM users) as totalSupply,
+      (SELECT COALESCE(SUM(CASE WHEN balance > 4000 THEN 4000 ELSE balance END), 0) FROM users) as supplyCapped,
       (SELECT COUNT(*) FROM users) as userCount,
       (SELECT COUNT(DISTINCT user_id) FROM (
         SELECT from_user_id AS user_id FROM transactions WHERE created_at > unixepoch('now', '-7 days') AND from_user_id IS NOT NULL

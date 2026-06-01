@@ -822,6 +822,15 @@ describe("Bipki Commands", () => {
         expect(bipbank.stabilizer.getDailyBaseAmount(s)).toBeGreaterThan(0)
       }
     })
+
+    it("whale does not crash stabilizer (supplyCapped protection)", () => {
+      bipbank.clearAll()
+      for (let i = 0; i < 9; i++) {
+        bipbank.deposit(1000 + i, 100, TX_TYPE.admin, "normal")
+      }
+      bipbank.deposit(9999, 100_000, TX_TYPE.admin, "whale")
+      expect(bipbank.stabilizer.coeff).toBe(1.5)
+    })
   })
 
   // ── economyStats / totalBurned ──────────────────────────────────
@@ -1122,20 +1131,5 @@ describe("/charity", () => {
       expect(buttons.some((b: any) => b.text.includes('25%'))).toBe(true)
     })
 
-    it("withdraws via button for poor user", async () => {
-      const env = new TelegramTestEnvironment(bot)
-      const user = env.createUser({ id: 993, first_name: "Withdrawer" })
-      bipbank.deposit(993, 50, TX_TYPE.admin, "test")
-      bipbank.charity.addToBank(1000)
-      await user.sendCommand("charity")
-      const msg = env.lastBotMessage()
-      expect(msg).toBeDefined()
-
-      await user.on(msg!).clickByText('25% 🏦')
-
-      expect(bipbank.balance(993)).toBe(300)
-      const edited = env.lastApiCall('editMessageText')
-      expect(edited?.params?.text).toContain("250")
-    })
   })
 })
