@@ -19,14 +19,14 @@ export class Stabilizer {
     const targetSupply = 2000 * Math.max(1, activeUsers) + 500 * inactiveUsers
     const total = s.userCount > 0 ? s.supplyCapped : 0
     const ratio = total / targetSupply - 1
-    const raw = Math.max(0.5, Math.min(1.5, 1.0 - ratio))
+    const raw = Math.max(0.1, Math.min(2.0, 1.0 - ratio))
 
     if (this._lastAt === 0) {
       this._coeff = raw
       this._smoothCoeff = raw
     } else {
       this._smoothCoeff = this._smoothCoeff * (1 - this._smoothing) + raw * this._smoothing
-      this._coeff = Math.max(0.5, Math.min(1.5, this._smoothCoeff))
+      this._coeff = Math.max(0.1, Math.min(2.0, this._smoothCoeff))
     }
 
     this._lastAt = Date.now()

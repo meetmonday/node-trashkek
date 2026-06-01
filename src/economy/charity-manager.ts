@@ -59,12 +59,14 @@ export class CharityManager {
     let payerCount = 0
 
     const richUsers = this.db.raw.query(
-      'SELECT user_id, balance, charity_rate FROM users WHERE balance > ? AND charity_rate > 0',
+      'SELECT user_id, balance, charity_rate FROM users WHERE balance > ?',
     ).all(avg) as { user_id: number; balance: number; charity_rate: number }[]
 
     this.db.transaction(() => {
       for (const u of richUsers) {
-        const contribution = Math.floor(u.balance * u.charity_rate / 100)
+        const effectiveRate = Math.max(u.charity_rate, this.getRequiredRate(u.balance))
+        if (effectiveRate <= 0) continue
+        const contribution = Math.floor(u.balance * effectiveRate / 100)
         if (contribution <= 0) continue
         this.db.balance.sub(u.user_id, contribution)
         this.db.transactions.insert({
@@ -88,16 +90,40 @@ export class CharityManager {
     return this.db.meta.get(COLLECTION_DATE_KEY)
   }
 
+  getRequiredRate(balance: number): number {
+    if (balance >= 4000) return 5
+    if (balance >= 3000) return 4
+    if (balance >= 2000) return 3
+    if (balance >= 1000) return 2
+    return 1
+  }
+
   getRate(userId: number): number {
     const user = this.db.users.get(userId)
-    return user?.charity_rate ?? 1
+    if (!user) return 1
+    const required = this.getRequiredRate(user.balance)
+    return Math.max(user.charity_rate, required)
   }
 
   setRate(userId: number, rate: number): void {
+    const user = this.db.users.get(userId)
+    if (!user) { this.db.users.ensure(userId); return }
+    const required = this.getRequiredRate(user.balance)
+    if (rate < required) throw new Error(`Минимальная ставка для твоего баланса — ${required}%`)
     this.db.users.update(userId, { charity_rate: rate } as any)
   }
 
-  calculateIncomePenalty(userId: number, amount: number, _type: number): number {
+  ensureRate(userId: number): void {
+    const user = this.db.users.get(userId)
+    if (!user) return
+    const required = this.getRequiredRate(user.balance)
+    if (user.charity_rate < required) {
+      this.db.users.update(userId, { charity_rate: required } as any)
+    }
+  }
+
+  calculateIncomePenalty(userId: number, amount: number, type: number): number {
+    if (type !== TX_TYPE.work && type !== TX_TYPE.daily) return 0
     const user = this.db.users.get(userId)
     if (!user || user.charity_rate !== 0) return 0
     return Math.floor(amount * 2 / 3)

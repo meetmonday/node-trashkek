@@ -13,22 +13,24 @@ function renderCharity(
   lastCollectDate?: string | null,
   collected?: { totalCollected: number; payerCount: number },
 ): { text: string; keyboard: any } {
-  const name = rate === 0 ? '🚫 Отключён' : rate === 1 ? `${rate}% (по умолч.)` : `${rate}%`
+  const user = bipbank.getUser(userId)
+  const required = bipbank.charity.getRequiredRate(user?.balance ?? 0)
+  const isDefault = rate === required
+  const label = isDefault ? `${rate}% (мин.)` : `${rate}%`
   const lines: string[] = [
     `🧑 ${displayName}`,
     '💰 БЛАГОТВОРИТЕЛЬНОСТЬ',
     '',
     `🏦 Банк: ${bold(String(bankBalance))} ${pluralizeBipki(bankBalance)}`,
-    `📊 Ваш взнос: ${name}`,
+    `📊 Ваш взнос: ${label}`,
   ]
 
-  const user = bipbank.getUser(userId)
-  if (user && user.charity_rate > 1) {
-    const boost = (user.charity_rate - 1) * 5
-    lines.push(`✨ Персональный буст дохода: +${boost}%`)
+  if (required > 1) {
+    lines.push(`⚠️ Для баланса ≥ ${required - 1}K обязательная ставка ${required}%`)
   }
-  if (user && user.charity_rate === 0) {
-    lines.push('⚠️ Доходы урезаны в 3 раза в пользу банка')
+  if (rate > 1) {
+    const boost = (rate - 1) * 5
+    lines.push(`✨ Персональный буст дохода: +${boost}%`)
   }
 
   const coeff = bipbank.stabilizer.coeff
@@ -50,12 +52,11 @@ function renderCharity(
 
   const inlineKeyboard: any[][] = [
     [
-      { text: rate === 0 ? '🚫 Отключён' : '🚫 Отключить', callback_data: `${PREFIX}:rate:0` },
       { text: rate === 1 ? '✅ 1%' : '1%', callback_data: `${PREFIX}:rate:1` },
       { text: rate === 2 ? '✅ 2%' : '2%', callback_data: `${PREFIX}:rate:2` },
+      { text: rate === 3 ? '✅ 3%' : '3%', callback_data: `${PREFIX}:rate:3` },
     ],
     [
-      { text: rate === 3 ? '✅ 3%' : '3%', callback_data: `${PREFIX}:rate:3` },
       { text: rate === 5 ? '✅ 5%' : '5%', callback_data: `${PREFIX}:rate:5` },
       { text: rate === 10 ? '✅ 10%' : '10%', callback_data: `${PREFIX}:rate:10` },
     ],
@@ -119,7 +120,7 @@ export default (bot: BotType) => {
         const rateStr = parts[1]
         if (!rateStr) return
         const rate = parseInt(rateStr, 10)
-        if (isNaN(rate) || rate < 0 || rate > 100) return
+        if (isNaN(rate) || rate < 1 || rate > 100) return
         bipbank.charity.setRate(userId, rate)
       } else if (parts[0] === 'take') {
         const fractionStr = parts[1]

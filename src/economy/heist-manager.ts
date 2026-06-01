@@ -1,10 +1,13 @@
 import type { DbApi } from './sql'
+import { TX_TYPE } from './types'
 
 const LOCK_TIMEOUT_MS = 60000
 const VAULT_KEY = 'vault_balance'
 const COOLDOWN_PREFIX = 'heist_cooldown:'
 const COOLDOWN_FAIL_MS = 2 * 60 * 60 * 1000
 const COOLDOWN_SUCCESS_MS = 24 * 60 * 60 * 1000
+const GAMBLING_BURN_RATE = 0.02
+const VAULT_BURN_RATE = 0.3
 
 export class HeistManager {
   private db: DbApi
@@ -26,6 +29,23 @@ export class HeistManager {
   addToVault(amount: number): void {
     if (amount <= 0) return
     this.setVaultBalance(this.vaultBalance + amount)
+  }
+
+  processGamblingLoss(bet: number): void {
+    if (bet <= 0) return
+    const burn = Math.ceil(bet * GAMBLING_BURN_RATE)
+    const vaultPart = bet - burn
+    if (vaultPart > 0) this.addToVault(vaultPart)
+  }
+
+  burnVaultReserve(): number {
+    const current = this.vaultBalance
+    if (current <= 0) return 0
+    const toBurn = Math.floor(current * VAULT_BURN_RATE)
+    if (toBurn <= 0) return 0
+    this.setVaultBalance(current - toBurn)
+    this.db.transactions.insert({ amount: toBurn, type: TX_TYPE.fee, description: 'vault burn after heist' })
+    return toBurn
   }
 
   takeFromVault(amount: number): number {

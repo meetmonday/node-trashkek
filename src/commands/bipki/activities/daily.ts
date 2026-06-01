@@ -54,7 +54,7 @@ export default (bot: BotType) =>
         user.last_daily === yesterdayUTC() ? user.streak + 1 : 1
       const base = bipbank.stabilizer.getDailyBaseAmount(streak)
       const bonus = roll()
-      const total = base + bonus
+      const total = base + Math.round(bonus * bipbank.stabilizer.coeff)
 
       const received = bipbank.deposit(userId, total, TX_TYPE.daily, `Streak: ${streak}`)
       bipbank.updateUser(userId, { streak, last_daily: today })

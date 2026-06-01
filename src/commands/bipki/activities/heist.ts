@@ -383,11 +383,13 @@ export default (bot: BotType) => {
         const fullReward = Math.min(heist.calculateReward(vault, stagesPassed), heist.payoutCeiling(userId))
         const reward = won ? fullReward : Math.floor(fullReward * 0.75)
         const paid = heist.takeFromVault(reward)
+        const vaultBurned = heist.burnVaultReserve()
 
         await refundBet(session)
         bipbank.deposit(userId, paid, TX_TYPE.gambled, 'Heist reward')
 
         const line = `🦅 Замести следы: ${side.emoji} ${side.name} → ${actual.emoji} ${actual.name} — ${won ? 'Успех ✅' : 'Частично 👎'}`
+        if (vaultBurned > 0) session.stages.push(`🔥 ${vaultBurned} бипок сгорело в сейфе`)
         session.stages.push(line)
 
         heist.setCooldown(userId, true)

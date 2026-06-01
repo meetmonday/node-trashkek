@@ -28,6 +28,7 @@ bipbank.withdraw(from: number, amount: number, type: number, description?: strin
 - `type` — одна из констант `TX_TYPE.*`.
 - `systemDescription` — по умолчанию `true` (нормализовать). Для user-описаний передавать `false`.
 - При `systemDescription !== false` описание сохраняется в `descriptions` таблицу; в транзакции хранится `description_id`.
+- К депозиту применяется `personalCoeff` благотворительности (буст дохода). При charity_rate=0% penalty 66% только на work/daily.
 
 `TxType` (числовые константы):
 
@@ -108,7 +109,7 @@ interface RainDistributeResult {
 Автоматически регулирует выплаты `/work` и `/daily` в зависимости от `supplyCapped` — суммы балансов всех пользователей, урезанной до 4000 бипок на каждого (защита от whales).
 
 ```ts
-bipbank.stabilizer.coeff: number              // текущий коэффициент [0.5, 1.5]
+bipbank.stabilizer.coeff: number              // текущий коэффициент [0.1, 2.0]
 bipbank.stabilizer.getWorkAmount(): number     // Math.max(1, round(rand(5,40) * coeff))
 bipbank.stabilizer.getDailyBaseAmount(streak): number  // round(10 * coeff) + STREAK_BONUS[streak]
 ```
@@ -121,16 +122,18 @@ inactiveUsers  = userCount - activeUsers
 targetSupply   = 2000 × max(1, activeUsers) + 500 × inactiveUsers
 effectiveTotal = userCount > 0 ? supplyCapped : 0
 ratio          = effectiveTotal / targetSupply - 1
-rawCoeff       = clamp(1.0 - ratio, 0.5, 1.5)
+rawCoeff       = clamp(1.0 - ratio, 0.1, 2.0)
 smoothCoeff   += (rawCoeff - smoothCoeff) × 0.3   // EMA-сглаживание
-coeff          = clamp(smoothCoeff, 0.5, 1.5)      // пересчёт раз в 6ч
+coeff          = clamp(smoothCoeff, 0.1, 2.0)      // пересчёт раз в 6ч
 ```
 
-Где `supplyCapped` = `SUM(MIN(balance, 4000))` — каждый пользователь вносит в стабилизатор не более 4000 бипок, что предотвращает искажение экономики одним богатым игроком.
+Где `supplyCapped` = `SUM(MIN(balance, 10000))` — каждый пользователь вносит в стабилизатор не более 10000 бипок, что предотвращает искажение экономики одним богатым игроком.
 
 - Первый пересчёт после старта использует `rawCoeff` напрямую (без сглаживания).
 - EMA-фактор 0.3: при резком скачке coeff достигает нового значения за ~4 пересчёта (24ч).
 - Streak bonus не режется коэффициентом.
+- Random бонус /daily режется коэффициентом (round(bonus × coeff)).
+- PersonalCoeff благотворительности применяется ко всем доходам, а не только work/daily.
 - При coeff ≠ 1 команды показывают уведомление.
 - Guard `userCount > 0` предотвращает деление на ноль.
 

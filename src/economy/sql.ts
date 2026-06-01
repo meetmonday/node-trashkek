@@ -167,7 +167,7 @@ export function getEconomyStats(db: Database): EconomyStats {
   return db.query(`
     SELECT
       (SELECT COALESCE(SUM(balance), 0) FROM users) as totalSupply,
-      (SELECT COALESCE(SUM(CASE WHEN balance > 4000 THEN 4000 ELSE balance END), 0) FROM users) as supplyCapped,
+      (SELECT COALESCE(SUM(CASE WHEN balance > 10000 THEN 10000 ELSE balance END), 0) FROM users) as supplyCapped,
       (SELECT COUNT(*) FROM users) as userCount,
       (SELECT COUNT(DISTINCT user_id) FROM (
         SELECT from_user_id AS user_id FROM transactions WHERE created_at > unixepoch('now', '-7 days') AND from_user_id IS NOT NULL
@@ -318,6 +318,9 @@ export function initTables(db: Database): void {
       value TEXT NOT NULL
     )
   `)
+  db.run('CREATE INDEX IF NOT EXISTS idx_tx_created_at ON transactions(created_at)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_tx_type_created_at ON transactions(type, created_at)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance)')
 }
 
 export function getMeta(db: Database, key: string): string | null {

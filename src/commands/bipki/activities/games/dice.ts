@@ -142,7 +142,7 @@ export default (bot: BotType) => {
       if (payout > 0) {
         bipbank.deposit(userId, payout, TX_TYPE.gambled, `Dice win: ${result.winName}`)
       } else {
-        bipbank.heist.addToVault(game.bet)
+        bipbank.heist.processGamblingLoss(game.bet)
       }
 
       game.log.push({

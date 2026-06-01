@@ -70,6 +70,16 @@ export const TX_TYPE = {
 
 Чтение: `COALESCE(d.text, t.description) as description` — работает с любыми данными.
 
+## Индексы
+
+Создаются в `initTables()`:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_tx_created_at ON transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_tx_type_created_at ON transactions(type, created_at);
+CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance);
+```
+
 ## PRAGMA
 
 Устанавливаются в конструкторе `BipBank`:

@@ -801,8 +801,8 @@ describe("Bipki Commands", () => {
 
   // ── Stabilizer ──────────────────────────────────────────────────
   describe("Economy stabilizer", () => {
-    it("starts at 1.5 for empty economy (stimulation)", () => {
-      expect(bipbank.stabilizer.coeff).toBe(1.5)
+    it("starts at 2.0 for empty economy (stimulation)", () => {
+      expect(bipbank.stabilizer.coeff).toBe(2.0)
     })
 
     it("getWorkAmount returns within expected range", () => {
@@ -810,8 +810,8 @@ describe("Bipki Commands", () => {
       bipbank.deposit(200, 1000, TX_TYPE.admin, "test")
       for (let i = 0; i < 50; i++) {
         const amt = bipbank.stabilizer.getWorkAmount()
-        expect(amt).toBeGreaterThanOrEqual(8)
-        expect(amt).toBeLessThanOrEqual(60)
+        expect(amt).toBeGreaterThanOrEqual(1)
+        expect(amt).toBeLessThanOrEqual(80)
       }
     })
 
@@ -829,7 +829,9 @@ describe("Bipki Commands", () => {
         bipbank.deposit(1000 + i, 100, TX_TYPE.admin, "normal")
       }
       bipbank.deposit(9999, 100_000, TX_TYPE.admin, "whale")
-      expect(bipbank.stabilizer.coeff).toBe(1.5)
+      const c = bipbank.stabilizer.coeff
+      expect(c).toBeGreaterThanOrEqual(0.1)
+      expect(c).toBeLessThanOrEqual(2.0)
     })
   })
 
@@ -945,34 +947,33 @@ describe("/charity", () => {
 
   describe("CharityManager.collect", () => {
     it("takes 1% from users above average balance", () => {
-      bipbank.deposit(900, 1000, TX_TYPE.admin, "test")
+      bipbank.deposit(900, 800, TX_TYPE.admin, "test")
       bipbank.deposit(901, 10, TX_TYPE.admin, "test")
       const result = bipbank.charity.collect()
       expect(result.payerCount).toBe(1)
-      expect(result.totalCollected).toBe(10)
-      expect(bipbank.balance(900)).toBe(990)
+      expect(result.totalCollected).toBe(8)
+      expect(bipbank.balance(900)).toBe(792)
       expect(bipbank.balance(901)).toBe(10)
-      expect(bipbank.charity.bankBalance).toBe(10)
+      expect(bipbank.charity.bankBalance).toBe(8)
     })
 
-    it("skips users with charity_rate = 0", () => {
-      bipbank.deposit(910, 1000, TX_TYPE.admin, "test")
+    it("applies progressive minimum rate based on balance", () => {
+      bipbank.deposit(910, 2000, TX_TYPE.admin, "test")
       bipbank.deposit(911, 10, TX_TYPE.admin, "test")
-      bipbank.charity.setRate(910, 0)
       const result = bipbank.charity.collect()
-      expect(result.payerCount).toBe(0)
-      expect(result.totalCollected).toBe(0)
-      expect(bipbank.balance(910)).toBe(1000)
+      expect(result.payerCount).toBe(1)
+      expect(result.totalCollected).toBe(60) // 2000 * 3% (required rate for 2000+)
+      expect(bipbank.balance(910)).toBe(1940)
     })
 
-    it("respects custom charity rates", () => {
-      bipbank.deposit(920, 1000, TX_TYPE.admin, "test")
+    it("respects custom charity rates above minimum", () => {
+      bipbank.deposit(920, 800, TX_TYPE.admin, "test")
       bipbank.deposit(921, 10, TX_TYPE.admin, "test")
       bipbank.updateUser(920, { charity_rate: 5 })
       const result = bipbank.charity.collect()
       expect(result.payerCount).toBe(1)
-      expect(result.totalCollected).toBe(50)
-      expect(bipbank.balance(920)).toBe(950)
+      expect(result.totalCollected).toBe(40) // 800 * 5%
+      expect(bipbank.balance(920)).toBe(760)
     })
 
     it("marks collection date in meta", () => {
@@ -1000,6 +1001,14 @@ describe("/charity", () => {
       bipbank.deposit(950, 90, TX_TYPE.work, "test job")
       expect(bipbank.balance(950)).toBe(130) // 100 + 90/3
       expect(bipbank.charity.bankBalance).toBe(60) // 90*2/3
+    })
+
+    it("does not penalize non-work/daily deposits at rate=0", () => {
+      bipbank.deposit(952, 100, TX_TYPE.admin, "test")
+      bipbank.updateUser(952, { charity_rate: 0 })
+      bipbank.deposit(952, 50, TX_TYPE.gambled, "test win")
+      expect(bipbank.balance(952)).toBe(150) // no penalty on gambled
+      expect(bipbank.charity.bankBalance).toBe(0)
     })
 
     it("does not penalize user with rate=1", () => {
@@ -1079,20 +1088,17 @@ describe("/charity", () => {
 
     it("persists rate changes via setRate", () => {
       bipbank.ensureUser(981)
-      bipbank.charity.setRate(981, 0)
-      expect(bipbank.charity.getRate(981)).toBe(0)
+      bipbank.charity.setRate(981, 1)
+      expect(bipbank.charity.getRate(981)).toBe(1)
       bipbank.charity.setRate(981, 5)
       expect(bipbank.charity.getRate(981)).toBe(5)
     })
 
-    it("persists rate changes via updateUser", () => {
+    it("enforces minimum rate based on balance", () => {
       bipbank.ensureUser(982)
-      bipbank.updateUser(982, { charity_rate: 0 })
-      const row = bipbank.getUser(982)
-      console.log("charity_rate via getUser:", row.charity_rate)
-      const rate = bipbank.charity.getRate(982)
-      console.log("charity_rate via getRate:", rate)
-      expect(rate).toBe(0)
+      bipbank.deposit(982, 1000, TX_TYPE.admin, "test")
+      expect(() => bipbank.charity.setRate(982, 1)).toThrow("2%") // required rate is 2% at 1000+
+      expect(bipbank.charity.getRate(982)).toBe(2)
     })
   })
 

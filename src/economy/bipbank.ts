@@ -84,10 +84,8 @@ export class BipBank {
 
     const penalty = this.charity.calculateIncomePenalty(to, amount, type)
     let effectiveAmount = amount - penalty
-    if (type === TX_TYPE.work || type === TX_TYPE.daily) {
-      const personalCoeff = this.charity.getPersonalCoeff(to)
-      effectiveAmount = Math.round(effectiveAmount * personalCoeff)
-    }
+    const personalCoeff = this.charity.getPersonalCoeff(to)
+    effectiveAmount = Math.round(effectiveAmount * personalCoeff)
 
     if (effectiveAmount <= 0) return 0
 
