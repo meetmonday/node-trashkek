@@ -2,6 +2,7 @@ import type { DbApi } from './sql'
 import { TX_TYPE } from './types'
 
 const LOCK_TIMEOUT_MS = 60000
+const LOCK_KEY = 'heist_lock'
 const VAULT_KEY = 'vault_balance'
 const COOLDOWN_PREFIX = 'heist_cooldown:'
 const COOLDOWN_FAIL_MS = 2 * 60 * 60 * 1000
@@ -9,9 +10,18 @@ const COOLDOWN_SUCCESS_MS = 24 * 60 * 60 * 1000
 const GAMBLING_BURN_RATE = 0.02
 const VAULT_BURN_RATE = 0.3
 
+interface HeistLock {
+  userId: number
+  startedAt: number
+}
+
+function readLock(raw: string | null): HeistLock | null {
+  if (!raw) return null
+  try { return JSON.parse(raw) as HeistLock } catch { return null }
+}
+
 export class HeistManager {
   private db: DbApi
-  private _lock: { userId: number; startedAt: number } | null = null
 
   constructor(db: DbApi) {
     this.db = db
@@ -56,27 +66,41 @@ export class HeistManager {
     return taken
   }
 
+  private readLock(): HeistLock | null {
+    const raw = this.db.meta.get(LOCK_KEY)
+    return readLock(raw)
+  }
+
+  private writeLock(lock: HeistLock | null): void {
+    if (lock) {
+      this.db.meta.set(LOCK_KEY, JSON.stringify(lock))
+    } else {
+      this.db.meta.delete(LOCK_KEY)
+    }
+  }
+
   get isLocked(): boolean {
-    if (!this._lock) return false
-    if (Date.now() - this._lock.startedAt > LOCK_TIMEOUT_MS) {
-      this._lock = null
+    const lock = this.readLock()
+    if (!lock) return false
+    if (Date.now() - lock.startedAt > LOCK_TIMEOUT_MS) {
+      this.writeLock(null)
       return false
     }
     return true
   }
 
   get lockUserId(): number | null {
-    return this._lock?.userId ?? null
+    return this.readLock()?.userId ?? null
   }
 
   acquireLock(userId: number): boolean {
     if (this.isLocked) return false
-    this._lock = { userId, startedAt: Date.now() }
+    this.writeLock({ userId, startedAt: Date.now() })
     return true
   }
 
   releaseLock(): void {
-    this._lock = null
+    this.writeLock(null)
   }
 
   getCooldown(userId: number): number {
@@ -128,7 +152,7 @@ export class HeistManager {
   }
 
   clear(): void {
-    this._lock = null
+    this.writeLock(null)
     this.initVault()
   }
 }

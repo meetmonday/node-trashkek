@@ -1,10 +1,12 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, safeReply } from '@/helpers/shared'
 
+type CmdCtx = MessageContext<BotType> & { args: string | null }
+
 export default (bot: BotType) =>
-  bot.command("economy", async (ctx: any) => {
+  bot.command("economy", async (ctx: CmdCtx) => {
     try {
       ensureBipkiUser(ctx)
       const s = bipbank.economyStats()

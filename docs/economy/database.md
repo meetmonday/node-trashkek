@@ -57,6 +57,11 @@ arena_scores (
   week_start TEXT    NOT NULL,
   PRIMARY KEY (chat_id, user_id, week_start)
 )
+
+meta (
+  key   TEXT    PRIMARY KEY,
+  value TEXT    NOT NULL
+)
 ```
 
 ## TxType — числовые константы
@@ -155,6 +160,14 @@ db.burned.add(userId, amount)
 db.meta.initTables()
 db.meta.migrate()
 db.meta.clearAll()
+db.meta.get(key)                // → string | undefined
+db.meta.set(key, value)         // UPSERT
+
+// Ключи meta:
+//   schema_version — число (текущая: 5), управляется migrateSchema
+//   heist_lock     — JSON { userId, startedAt } или пустая строка
+//   vault          — строка (число), баланс банковского сейфа
+//   withdraw_cooldown:{userId} — дата последнего изъятия из банка
 
 db.arena.top(chatId, week, limit?)      // → ArenaScoreRow[]
 db.arena.upsertScore(chatId, userId, score, week)  // INSERT ON CONFLICT
@@ -176,6 +189,14 @@ db.transaction(() => { ... })       // SQLite transaction
 - Хранит до 5 бекапов в `data/backups/bipki-{timestamp}.db`.
 - Пропускается на `:memory:`.
 - Пропускается если последний бекап уже актуален (mtime check).
+
+## Схема и миграции
+
+Версионирование через `meta` таблицу (ключ `schema_version`). Текущая версия: 5.
+
+- `migrateSchema()` вызывается при старте BipBank, проходит все версии последовательно.
+- `tryAlter()` — идемпотентное добавление колонок, игнорирует `duplicate column name`.
+- Начальный `CREATE TABLE` уже включает все поля (`username`, `description_id`, `parent_tx_id`).
 
 ## Миграция из старого формата
 

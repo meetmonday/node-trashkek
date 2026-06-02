@@ -1,21 +1,35 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext, type Next } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName, parsePositiveAmount, randomlyDistribute } from '@/helpers/shared'
 
+type CmdCtx = MessageContext<BotType> & { args: string | null }
+
 interface NgBetState {
   participants: Map<number, number>
   total: number
+  updatedAt: number
 }
 
 const states = new Map<number, NgBetState>()
 
+const NGBET_TTL = 4 * 60 * 60 * 1000
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, s] of states) {
+    if (now - s.updatedAt > NGBET_TTL) {
+      states.delete(key)
+    }
+  }
+}, 30 * 60 * 1000)
+
 function getState(chatId: number): NgBetState {
   let s = states.get(chatId)
   if (!s) {
-    s = { participants: new Map(), total: 0 }
+    s = { participants: new Map(), total: 0, updatedAt: Date.now() }
     states.set(chatId, s)
   }
+  s.updatedAt = Date.now()
   return s
 }
 
@@ -78,7 +92,7 @@ function distributePoolRain(
 }
 
 export default (bot: BotType) => {
-  bot.command('ngbet', async (ctx: any) => {
+  bot.command('ngbet', async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       const chatId = ctx.chat?.id
@@ -136,9 +150,9 @@ ${userName(ctx.from, userId)} поставил ${bold(String(amount))} ${plurali
     }
   })
 
-  bot.on('message', async (ctx: any, next: any) => {
+  bot.on('message', async (ctx: MessageContext<BotType>, next: Next) => {
     try {
-      if(ctx.from.username !== 'naganbot' && ctx.from.username !== 'itisdj_bot') return next()
+      if(!ctx.from || (ctx.from.username !== 'naganbot' && ctx.from.username !== 'itisdj_bot')) return next()
       const text = ctx.text || ctx.caption || ''
       const chatId = ctx.chat?.id
       if (!chatId || !text) return

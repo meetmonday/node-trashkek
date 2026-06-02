@@ -1,7 +1,9 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const JOBS = [
   'вынес мусор 🗑️', 'покормил кота 🐱', 'помыл посуду 🍽️',
@@ -15,7 +17,7 @@ const JOBS = [
 const COOLDOWN = 7_200_000
 
 export default (bot: BotType) =>
-  bot.command("work", async (ctx: any) => {
+  bot.command("work", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId) return
@@ -43,7 +45,6 @@ export default (bot: BotType) =>
       if (coeff !== 1.0) parts.push(format`\n📊 Экономика ×${coeff.toFixed(2)}`)
       const pCoeff = bipbank.charity.getPersonalCoeff(userId)
       if (pCoeff > 1.0) parts.push(format`\n❤️ Благотворительность +${Math.round((pCoeff - 1) * 100)}%`)
-      else if (bipbank.charity.getRate(userId) === 0) parts.push(format`\n🚫 Благотворительность отключена — доход урезан в 3 раза`)
       await ctx.reply(join(parts, ''))
     } catch {
       await safeReply(ctx, 'Ошибка')

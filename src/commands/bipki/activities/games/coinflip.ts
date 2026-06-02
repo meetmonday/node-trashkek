@@ -1,10 +1,12 @@
-import { format, bold } from 'gramio'
+import { format, bold, type MessageContext, type CallbackQueryContext } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki, userName } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 import {
   gameKey, MAX_LOG, MIN_BET, MAX_BET, parseGameBet, newBet,
-  renderGameHeader, renderGameLogLines,
+  renderGameHeader, renderGameLogLines, cleanupStaleGames, sendArenaEvent,
   type GameBase, type GameLogEntry,
 } from '@/helpers/games'
 
@@ -13,6 +15,9 @@ interface CoinflipGame extends GameBase {
 }
 
 const games = new Map<string, CoinflipGame>()
+
+const CLEANUP_TTL = 30 * 60 * 1000
+setInterval(() => { cleanupStaleGames(games, CLEANUP_TTL) }, 5 * 60 * 1000)
 
 const KEYBOARD: any = {
   inline_keyboard: [
@@ -36,7 +41,7 @@ function renderGame(g: CoinflipGame): string {
 }
 
 export default (bot: BotType) => {
-  bot.command("coinflip", async (ctx: any) => {
+  bot.command("coinflip", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId || !ctx.chat?.id) return
@@ -52,7 +57,7 @@ export default (bot: BotType) => {
       }
 
       const name = userName(ctx.from, userId)
-      const sent = await ctx.reply(renderGame({ chatId: ctx.chat.id, messageId: 0, creatorId: userId, creatorName: name, bet, closed: false, log: [] }), { reply_markup: KEYBOARD })
+      const sent = await ctx.reply(renderGame({ chatId: ctx.chat.id, messageId: 0, creatorId: userId, creatorName: name, bet, closed: false, log: [], createdAt: Date.now() }), { reply_markup: KEYBOARD })
       const msgId = sent?.id
       if (!msgId) return
 
@@ -64,13 +69,14 @@ export default (bot: BotType) => {
         bet,
         closed: false,
         log: [],
+        createdAt: Date.now(),
       })
     } catch {
       await ctx.reply('Ошибка').catch(() => {})
     }
   })
 
-  bot.on('callback_query', async (ctx: any, next: any) => {
+  bot.on('callback_query', async (ctx: CallbackQueryContext<BotType>, next: any) => {
     try {
       const raw = ctx.update?.callback_query?.data || ctx.payload?.data
       if (!raw || typeof raw !== 'string' || !raw.startsWith('cf:')) return next()
@@ -167,12 +173,7 @@ export default (bot: BotType) => {
         game.log.splice(0, game.log.length - MAX_LOG)
       }
 
-      if (arenaEvent) {
-        const msg = arenaEvent.type === 'takeover'
-          ? format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} выходит в лидеры Арены — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
-          : format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} удерживает лидерство 3 дня — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
-        await ctx.reply(msg).catch(() => {})
-      }
+      sendArenaEvent(ctx, arenaEvent)
 
       await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })
       await ctx.answerCallbackQuery({ text: alertText, show_alert: true })

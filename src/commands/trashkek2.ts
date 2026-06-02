@@ -1,4 +1,4 @@
-import { format, link, bold, code } from "gramio";
+import { format, link, bold, code, type MessageContext } from "gramio";
 import { markdownToFormattable } from "@gramio/format/markdown";
 import { firstImgSrc, htmlCleaner } from "@/helpers/tbGarbageParser";
 import string2emoji from "@/helpers/string2emoji";
@@ -46,8 +46,9 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
 }
 
 
-async function main(ctx: any): Promise<void> {
+async function main(ctx: MessageContext<BotType>): Promise<void> {
   const url = ctx.text;
+  if (!url) return;
   let topicId: number;
   let commentId: number;
   let host: string;

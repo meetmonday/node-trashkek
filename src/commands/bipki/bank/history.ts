@@ -1,8 +1,10 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import { bipbank, TX_TYPE, txTypeName, type TransactionRow } from '@/economy'
 import timeAgo from '@/helpers/timeAgo'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, safeReply } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const TYPE_EMOJI: Record<number, string> = {
   [TX_TYPE.daily]: '🎁',
@@ -53,7 +55,7 @@ function fmt(txs: TransactionRow[], uid: number) {
 }
 
 export default (bot: BotType) =>
-  bot.command("history", async (ctx: any) => {
+  bot.command("history", async (ctx: CmdCtx) => {
     try {
       const uid = ensureBipkiUser(ctx)
       if (!uid) return

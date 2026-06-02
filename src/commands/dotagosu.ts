@@ -1,4 +1,5 @@
 import { Database } from 'bun:sqlite';
+import { type InlineQueryContext } from 'gramio';
 
 import type { BotType } from '..';
 
@@ -40,7 +41,7 @@ function getRandomLine(): string {
  * Handle inline query
  * @param ctx - Telegram inline query context
  */
-const main = async (ctx: any) => {
+const main = async (ctx: InlineQueryContext<BotType>) => {
   const text = getRandomLine();
 
   ctx.answerInlineQuery([{

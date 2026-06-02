@@ -2,6 +2,9 @@ import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki, userName } from '@/helpers/shared'
 import { sleep, gameKey, deleteDiceMsg } from '@/helpers/games'
+import { type MessageContext, type CallbackQueryContext } from 'gramio'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const MAX_BET = 500
 const SESSION_TTL = 60000
@@ -20,6 +23,15 @@ interface HeistSession {
 }
 
 const sessions = new Map<string, HeistSession>()
+
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, s] of sessions) {
+    if (now - s.startedAt > SESSION_TTL) {
+      sessions.delete(key)
+    }
+  }
+}, 30_000)
 
 const DICE_EMOJI = ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'] as const
 const DICE_NAMES = ['', 'Единица', 'Двойка', 'Тройка', 'Четвёрка', 'Пятёрка', 'Шестёрка'] as const
@@ -131,7 +143,7 @@ export default (bot: BotType) => {
     await refundBet(session)
   }
 
-  async function failHeist(ctx: any, session: HeistSession, line: string): Promise<void> {
+  async function failHeist(ctx: CallbackQueryContext<BotType>, session: HeistSession, line: string): Promise<void> {
     const heist = bipbank.heist
     const vault = heist.vaultBalance
     if (session.bet > 0) heist.addToVault(session.bet)
@@ -148,7 +160,7 @@ export default (bot: BotType) => {
     sessions.delete(gameKey(session.chatId, session.messageId))
   }
 
-  bot.command("crack", async (ctx: any) => {
+  bot.command("crack", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId || !ctx.chat?.id) return
@@ -226,7 +238,7 @@ export default (bot: BotType) => {
     }
   })
 
-  bot.on('callback_query', async (ctx: any, next: any) => {
+  bot.on('callback_query', async (ctx: CallbackQueryContext<BotType>, next: any) => {
     const raw = ctx.update?.callback_query?.data || ctx.payload?.data
     if (typeof raw !== 'string' || !raw.startsWith(`${HEIST_PREFIX}:`)) return next()
 

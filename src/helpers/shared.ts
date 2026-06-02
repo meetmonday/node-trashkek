@@ -1,15 +1,28 @@
 import { bipbank } from '@/economy'
 
-/**
- * Ensure user exists in BipBank and save chat/username metadata.
- *
- * Auto-creates user in the DB, records `chat_users` if in a group,
- * and persists the Telegram @username for mention resolution.
- *
- * @param ctx - Telegram command context.
- * @returns Telegram user ID, or `null` if ctx has no valid sender.
- */
-export function ensureBipkiUser(ctx: any): number | null {
+interface CtxLike {
+  from?: { id?: number; username?: string }
+  chat?: { id?: number }
+}
+
+interface ReplyLike {
+  from?: { id: number; username?: string; first_name?: string }
+}
+
+interface EntityLike {
+  type: string
+  offset: number
+  length: number
+  user?: { id: number; username?: string }
+}
+
+interface ResolveCtxLike {
+  replyMessage?: ReplyLike | null
+  entities?: EntityLike[] | null
+  text?: string | null
+}
+
+export function ensureBipkiUser(ctx: CtxLike): number | null {
   const userId = ctx.from?.id
   if (!userId) return null
   if (ctx.chat?.id) bipbank.ensureChatUser(ctx.chat.id, userId)
@@ -17,12 +30,6 @@ export function ensureBipkiUser(ctx: any): number | null {
   return userId
 }
 
-/**
- * Russian pluralisation for "бипки" (bipki).
- *
- * @param n - Number of bipki.
- * @returns `"бипка"` | `"бипки"` | `"бипок"`
- */
 export function pluralizeBipki(n: number): string {
   const abs = Math.abs(n)
   const lastTwo = abs % 100
@@ -33,40 +40,17 @@ export function pluralizeBipki(n: number): string {
   return 'бипок'
 }
 
-/**
- * Safely reply to a Telegram context, ignoring send errors.
- *
- * Replaces the common pattern `await ctx.reply('...').catch(() => {})`.
- *
- * @param ctx - Telegram command context.
- * @param text - Message text to send.
- */
-export async function safeReply(ctx: any, text: string): Promise<void> {
+export async function safeReply(ctx: { reply: (text: string) => Promise<unknown> }, text: string): Promise<void> {
   try { await ctx.reply(text) } catch { /* ignore */ }
 }
 
-/**
- * Extract a display name from a Telegram user-like object.
- *
- * Falls back to `user${fallbackId}` if neither `first_name` nor `username` is set.
- *
- * @param obj - Object with optional `first_name` and `username` fields (e.g. `ctx.from`, `entity.user`).
- * @param fallbackId - Numeric ID used for the `user${id}` fallback.
- * @returns Display name string.
- */
 export function userName(
-  obj: { first_name?: string; username?: string } | null | undefined,
+  obj: { firstName?: string; first_name?: string; username?: string } | null | undefined,
   fallbackId: number,
 ): string {
-  return obj?.first_name || obj?.username || `user${fallbackId}`
+  return obj?.firstName || obj?.first_name || obj?.username || `user${fallbackId}`
 }
 
-/**
- * Parse a positive integer from a raw CLI-style argument string.
- *
- * @param raw - Raw argument string (e.g. `ctx.args`).
- * @returns `{ amount }` on success, or `{ amount: 0, error }` on failure.
- */
 export function parsePositiveAmount(
   raw: string | undefined,
 ): { amount: number; error?: string } {
@@ -76,18 +60,7 @@ export function parsePositiveAmount(
   return { amount }
 }
 
-/**
- * Resolve a target user from a Telegram command context.
- *
- * Checks (in order):
- * 1. Reply (`ctx.replyMessage.from`)
- * 2. `text_mention` entity
- * 3. `mention` entity (`@username` resolved via `bipbank.findByUsername`)
- *
- * @param ctx - Telegram command context.
- * @returns Object with `targetId` and `targetName`, or both empty if not found.
- */
-export function resolveTarget(ctx: any): { targetId: number | null; targetName: string } {
+export function resolveTarget(ctx: ResolveCtxLike): { targetId: number | null; targetName: string } {
   if (ctx.replyMessage?.from) {
     return {
       targetId: ctx.replyMessage.from.id,

@@ -113,12 +113,15 @@ export function insertTx(
   const type = tx.type
 
   if (systemDescription !== false && description) {
-    db.run('INSERT OR IGNORE INTO descriptions (text) VALUES (?)', [description])
-    const row = db.query('SELECT id FROM descriptions WHERE text = ?').get(description) as { id: number } | undefined
+    const descId = (db.query(
+      'INSERT OR IGNORE INTO descriptions (text) VALUES (?) RETURNING id'
+    ).get(description) as { id: number } | undefined)?.id
+      ?? (db.query('SELECT id FROM descriptions WHERE text = ?').get(description) as { id: number } | undefined)?.id
+      ?? null
     const result = db.query(`
       INSERT INTO transactions (from_user_id, to_user_id, amount, type, description_id, parent_tx_id)
       VALUES (?, ?, ?, ?, ?, ?) RETURNING id
-    `).get(from, to, amount, type, row?.id ?? null, parentTxId ?? null) as { id: number }
+    `).get(from, to, amount, type, descId, parentTxId ?? null) as { id: number }
     return result.id
   }
 
@@ -381,20 +384,27 @@ export function getArenaScoreByChat(db: Database, chatId: number, week: string):
   return row?.score ?? 0
 }
 
-/** One-shot schema migrations. */
+const SCHEMA_VERSION = 5
+
+function tryAlter(db: Database, sql: string): void {
+  try {
+    db.run(sql)
+  } catch (e) {
+    if (e instanceof Error && /duplicate column/i.test(e.message)) return
+    throw e
+  }
+}
+
 export function migrateSchema(db: Database): void {
-  try {
-    db.run('ALTER TABLE users ADD COLUMN username TEXT')
-  } catch {}
-  try {
-    db.run('ALTER TABLE users ADD COLUMN charity_rate INTEGER NOT NULL DEFAULT 1')
-  } catch {}
-  try {
-    db.run('ALTER TABLE transactions ADD COLUMN description_id INTEGER REFERENCES descriptions(id)')
-  } catch {}
-  try {
-    db.run('ALTER TABLE transactions ADD COLUMN parent_tx_id INTEGER REFERENCES transactions(id)')
-  } catch {}
+  const currentVersion = parseInt(getMeta(db, 'schema_version') ?? '0', 10)
+  if (currentVersion >= SCHEMA_VERSION) return
+
+  if (currentVersion < 1) tryAlter(db, 'ALTER TABLE users ADD COLUMN username TEXT')
+  if (currentVersion < 2) tryAlter(db, 'ALTER TABLE users ADD COLUMN charity_rate INTEGER NOT NULL DEFAULT 1')
+  if (currentVersion < 3) tryAlter(db, 'ALTER TABLE transactions ADD COLUMN description_id INTEGER REFERENCES descriptions(id)')
+  if (currentVersion < 4) tryAlter(db, 'ALTER TABLE transactions ADD COLUMN parent_tx_id INTEGER REFERENCES transactions(id)')
+
+  setMeta(db, 'schema_version', String(SCHEMA_VERSION))
 }
 
 /** DELETE all rows from every table (test environments only). */

@@ -86,21 +86,14 @@ export class BipBank {
     if (amount <= 0) throw new Error('Amount must be positive')
     this.ensureUser(to)
 
-    const penalty = this.charity.calculateIncomePenalty(to, amount, type)
-    let effectiveAmount = amount - penalty
     const personalCoeff = this.charity.getPersonalCoeff(to)
-    effectiveAmount = Math.round(effectiveAmount * personalCoeff)
+    const effectiveAmount = Math.round(amount * personalCoeff)
 
     if (effectiveAmount <= 0) return 0
 
     this.db.transaction(() => {
       this.db.balance.add(to, effectiveAmount)
       this.db.transactions.insert({ to_user_id: to, amount: effectiveAmount, type, description, systemDescription })
-      if (penalty > 0) {
-        const currentVault = parseInt(this.db.meta.get('charity_balance') ?? '0', 10)
-        this.db.meta.set('charity_balance', String(currentVault + penalty))
-        this.db.transactions.insert({ from_user_id: to, amount: penalty, type: TX_TYPE.charity, description: 'income penalty (charity disabled)' })
-      }
     })
     return effectiveAmount
   }
@@ -277,17 +270,9 @@ export class BipBank {
 
 let _instance: BipBank | undefined
 
-function getInstance(): BipBank {
+export function getBipBank(): BipBank {
   if (!_instance) _instance = new BipBank()
   return _instance
 }
 
-export const bipbank = new Proxy({} as BipBank, {
-  get(_, prop) {
-    return Reflect.get(getInstance(), prop, getInstance())
-  },
-  set(_, prop, value) {
-    Reflect.set(getInstance(), prop, value)
-    return true
-  },
-})
+export const bipbank = getBipBank()

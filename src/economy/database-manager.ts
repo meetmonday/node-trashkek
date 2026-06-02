@@ -41,7 +41,10 @@ export class DatabaseManager {
 
     const ts = new Date().toISOString().replace(/[:.]/g, '-')
     const backupPath = join(backupDir, `bipki-${ts}.db`)
-    this.db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`)
+
+    const safePath = backupPath.replace(/[^a-zA-Z0-9_\-.\/]/g, '')
+    if (safePath !== backupPath) throw new Error('Invalid backup path')
+    this.db.exec(`VACUUM INTO '${safePath.replace(/'/g, "''")}'`)
 
     const allFiles = [backupPath, ...existing.map(e => e.path)].sort().reverse()
 

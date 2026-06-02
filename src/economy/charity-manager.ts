@@ -122,24 +122,17 @@ export class CharityManager {
     }
   }
 
-  calculateIncomePenalty(userId: number, amount: number, type: number): number {
-    if (type !== TX_TYPE.work && type !== TX_TYPE.daily) return 0
-    const user = this.db.users.get(userId)
-    if (!user || user.charity_rate !== 0) return 0
-    return Math.floor(amount * 2 / 3)
-  }
-
   getPersonalCoeff(userId: number): number {
-    const user = this.db.users.get(userId)
-    if (!user || user.charity_rate <= 1) return 1.0
-    return 1.0 + (user.charity_rate - 1) * CHARITY_BOOST_RATIO
+    const rate = this.getRate(userId)
+    if (rate <= 1) return 1.0
+    return 1.0 + (rate - 1) * CHARITY_BOOST_RATIO
   }
 
   canWithdraw(userId: number): { allowed: boolean; reason?: string } {
     const user = this.db.users.get(userId)
     if (!user) return { allowed: false, reason: 'Пользователь не найден' }
     if (user.balance >= MIN_BALANCE_FOR_WITHDRAW) {
-      return { allowed: false, reason: `Баланс ${user.balance} — минимум ${MIN_BALANCE_FOR_WITHDRAW} бипок для забора` }
+      return { allowed: false, reason: `Твой баланс (${user.balance}) превышает лимит (${MIN_BALANCE_FOR_WITHDRAW}). Сначала потрать часть бипок` }
     }
     const cooldownKey = WITHDRAW_COOLDOWN_KEY + userId
     const lastWithdraw = this.db.meta.get(cooldownKey)

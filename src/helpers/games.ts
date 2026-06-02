@@ -1,6 +1,20 @@
-import { pluralizeBipki } from './shared'
+import { format, bold } from 'gramio'
+import { pluralizeBipki, userName } from './shared'
 
 export const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
+
+export function sendArenaEvent(
+  ctx: any,
+  arenaEvent: { type: string; top: { userId: number; score: number }[] } | null,
+): void {
+  if (!arenaEvent) return
+  const top = arenaEvent.top[0]
+  if (!top) return
+  const msg = arenaEvent.type === 'takeover'
+    ? format`🏟️ ${bold(userName(ctx.from, top.userId))} выходит в лидеры Арены — ${bold(String(top.score))} ${pluralizeBipki(top.score)}!`
+    : format`🏟️ ${bold(userName(ctx.from, top.userId))} удерживает лидерство 3 дня — ${bold(String(top.score))} ${pluralizeBipki(top.score)}!`
+  ctx.reply(msg).catch(() => {})
+}
 
 export const MIN_BET = 10
 export const MAX_BET = 500
@@ -13,6 +27,38 @@ export interface GameBase {
   creatorName: string
   bet: number
   closed: boolean
+  createdAt: number
+}
+
+export function cleanupStaleGames<K, V extends { createdAt?: number }>(
+  map: Map<K, V>,
+  ttl: number,
+): number {
+  const now = Date.now()
+  let count = 0
+  for (const [key, val] of map) {
+    if (val.createdAt && now - val.createdAt > ttl) {
+      map.delete(key)
+      count++
+    }
+  }
+  return count
+}
+
+/** Clear stale entries from a Set where keys encode a date prefix (e.g. userId:YYYY-MM-DD). */
+export function cleanupStaleDailySet(
+  set: Set<string>,
+): number {
+  const today = new Date().toISOString().slice(0, 10)
+  let count = 0
+  for (const key of set) {
+    const datePart = key.split(':')[1]
+    if (datePart && datePart !== today) {
+      set.delete(key)
+      count++
+    }
+  }
+  return count
 }
 
 export interface GameLogEntry {

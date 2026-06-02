@@ -22,8 +22,9 @@ const bot = new Bot(token)
   .onStart(async ({ info }) => {
     console.log(`Running as @${info.username}`);
 
-    const { bipbank } = await import('@/economy');
-    bipbank.arena.onEvent = (event) => {
+    const { bipbank: _bipbank } = await import('@/economy');
+    bipbankInstance = _bipbank;
+    _bipbank.arena.onEvent = (event) => {
       if (event.type === 'week_start') {
         if (event.chatId === 0) return
         bot.api.sendMessage({
@@ -35,8 +36,8 @@ const bot = new Bot(token)
       if (event.type === 'week_end' && event.prizes) {
         const lines = [`🏟️ Неделя ${event.week} завершена!`]
         for (let i = 0; i < event.top.length && i < event.prizes.length; i++) {
-          const t = event.top[i]
-          const p = event.prizes[i]
+          const t = event.top[i]!
+          const p = event.prizes[i]!
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
           lines.push(`${medal} ${bold(`user${t.userId}`)} — ${bold(String(t.score))} бипок | +${bold(String(p.amount))} 🪙`)
         }
@@ -55,6 +56,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 let shuttingDown = false;
+let bipbankInstance: { close(): void } | null = null;
 
 async function shutdown(exitCode = 0): Promise<void> {
   if (shuttingDown) return;
@@ -64,8 +66,7 @@ async function shutdown(exitCode = 0): Promise<void> {
   bot.stop();
 
   try {
-    const { bipbank } = await import('@/economy');
-    bipbank.close();
+    (bipbankInstance ?? (await import('@/economy')).bipbank).close();
   } catch {
     // economy module may not be loaded yet
   }

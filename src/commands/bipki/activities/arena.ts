@@ -1,10 +1,12 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki } from '@/helpers/shared'
 
+type CmdCtx = MessageContext<BotType> & { args: string | null }
+
 export default (bot: BotType) => {
-  bot.command('arena', async (ctx: any) => {
+  bot.command('arena', async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId || !ctx.chat?.id) return
@@ -19,7 +21,7 @@ export default (bot: BotType) => {
       }
 
       const userScore = bipbank.arena.getUserScore(chatId, userId)
-      const userRank = top.findIndex(r => r.user_id === userId) + 1
+      const userRank = top.findIndex(r => r.userId === userId) + 1
 
       const items = top.map((r, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`

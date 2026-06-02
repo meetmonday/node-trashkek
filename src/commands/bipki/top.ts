@@ -1,7 +1,9 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import { bipbank, type TopRow } from '@/economy'
 import type { BotType } from '../..'
 import { safeReply } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 function render(rows: TopRow[], title: string, isGlobal = false) {
   if (!rows.length) return 'Топ пуст'
@@ -17,7 +19,7 @@ function render(rows: TopRow[], title: string, isGlobal = false) {
 }
 
 export default (bot: BotType) => {
-  bot.command("top", async (ctx: any) => {
+  bot.command("top", async (ctx: CmdCtx) => {
     if (ctx.chat?.type === 'private') return
     try {
       const rows = bipbank.top(ctx.chat?.id, 10)
@@ -27,7 +29,7 @@ export default (bot: BotType) => {
     }
   })
 
-  bot.command("globaltop", async (ctx: any) => {
+  bot.command("globaltop", async (ctx: CmdCtx) => {
     try {
       await ctx.reply(render(bipbank.top(undefined, 10), 'Глобальный топ', true))
     } catch {

@@ -994,20 +994,12 @@ describe("/charity", () => {
     })
   })
 
-  describe("CharityManager income penalty", () => {
-    it("penalizes user with rate=0: 2/3 to vault", () => {
+  describe("CharityManager income", () => {
+    it("no penalty for rate=0 (logic removed)", () => {
       bipbank.deposit(950, 100, TX_TYPE.admin, "test")
       bipbank.updateUser(950, { charity_rate: 0 })
       bipbank.deposit(950, 90, TX_TYPE.work, "test job")
-      expect(bipbank.balance(950)).toBe(130) // 100 + 90/3
-      expect(bipbank.charity.bankBalance).toBe(60) // 90*2/3
-    })
-
-    it("does not penalize non-work/daily deposits at rate=0", () => {
-      bipbank.deposit(952, 100, TX_TYPE.admin, "test")
-      bipbank.updateUser(952, { charity_rate: 0 })
-      bipbank.deposit(952, 50, TX_TYPE.gambled, "test win")
-      expect(bipbank.balance(952)).toBe(150) // no penalty on gambled
+      expect(bipbank.balance(950)).toBe(190) // 100 + 90 (no penalty)
       expect(bipbank.charity.bankBalance).toBe(0)
     })
 

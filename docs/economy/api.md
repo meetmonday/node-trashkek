@@ -28,7 +28,7 @@ bipbank.withdraw(from: number, amount: number, type: number, description?: strin
 - `type` — одна из констант `TX_TYPE.*`.
 - `systemDescription` — по умолчанию `true` (нормализовать). Для user-описаний передавать `false`.
 - При `systemDescription !== false` описание сохраняется в `descriptions` таблицу; в транзакции хранится `description_id`.
-- К депозиту применяется `personalCoeff` благотворительности (буст дохода). При charity_rate=0% penalty 66% только на work/daily.
+- К депозиту применяется `personalCoeff` благотворительности (буст дохода).
 
 `TxType` (числовые константы):
 

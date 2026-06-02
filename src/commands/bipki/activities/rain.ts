@@ -1,10 +1,12 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext, type CallbackQueryContext } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, safeReply, userName, parsePositiveAmount, randomlyDistribute } from '@/helpers/shared'
 
+type CmdCtx = MessageContext<BotType> & { args: string | null }
+
 export async function distributeRain(
-  ctx: any,
+  ctx: MessageContext<BotType>,
   userId: number,
   chatId: number,
   amount: number,
@@ -47,7 +49,7 @@ export async function distributeRain(
 }
 
 export default (bot: BotType) =>
-  bot.command("rain", async (ctx: any) => {
+  bot.command("rain", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       const chatId = ctx.chat?.id
@@ -56,7 +58,7 @@ export default (bot: BotType) =>
         return
       }
 
-      const { amount, error } = parsePositiveAmount(ctx.args)
+      const { amount, error } = parsePositiveAmount(ctx.args ?? undefined)
       if (error) {
         await ctx.reply('🌧 ' + error)
         return

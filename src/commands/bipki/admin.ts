@@ -1,14 +1,16 @@
-import { format, bold } from 'gramio'
+import { format, bold, type MessageContext } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const ADMIN_IDS = new Set(
   (process.env.ADMIN_IDS || '187365207').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)),
 )
 
 export default (bot: BotType) =>
-  bot.command("bbadmin", async (ctx: any) => {
+  bot.command("bbadmin", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId) return
@@ -58,7 +60,7 @@ export default (bot: BotType) =>
         return
       }
 
-      const rawAmount = parseInt(amountMatch[1], 10)
+      const rawAmount = parseInt(amountMatch[1]!, 10)
       const description = argsStr.slice(amountMatch[0].length).trim() || undefined
 
       if (rawAmount === 0) {

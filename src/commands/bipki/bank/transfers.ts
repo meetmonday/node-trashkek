@@ -1,7 +1,9 @@
-import { format, bold } from 'gramio'
+import { format, bold, type MessageContext } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '../../..'
 import { ensureBipkiUser, pluralizeBipki, safeReply, userName, resolveTarget } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 function findLastAmount(parts: string[]): { idx: number; amount: number } | null {
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -11,7 +13,7 @@ function findLastAmount(parts: string[]): { idx: number; amount: number } | null
   return null
 }
 
-function parse(ctx: any): { to?: number; amount?: number; comment?: string; err?: string } {
+function parse(ctx: CmdCtx): { to?: number; amount?: number; comment?: string; err?: string } {
   if (ctx.replyMessage?.from && ctx.args) {
     const parts = ctx.args.trim().split(/\s+/)
     const found = findLastAmount(parts)
@@ -46,7 +48,7 @@ function parse(ctx: any): { to?: number; amount?: number; comment?: string; err?
 }
 
 export default (bot: BotType) =>
-  bot.command("transfer", async (ctx: any) => {
+  bot.command("transfer", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId) return

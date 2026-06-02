@@ -1,4 +1,4 @@
-import { format, link } from 'gramio';
+import { format, link, type MessageContext } from 'gramio';
 import { search } from 'booru';
 import rand from '@/helpers/rand';
 import { bipbank } from '@/economy';
@@ -6,6 +6,8 @@ import { bipbank } from '@/economy';
 import type { BotType } from '..';
 import { ensureBipkiUser } from '@/helpers/shared';
 import { distributeRain } from './bipki/activities/rain';
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const DEFAULT_SITE = 'danbooru'
 
@@ -29,7 +31,7 @@ const extractSite = (input: string): { site: string; tags: string; } => {
  * Sends a random image from Danbooru.
  * @param {Object} ctx - Context object.
  */
-const random = async (ctx: any) => {
+const random = async (ctx: CmdCtx) => {
   const randomId = rand(0, 11191117);
   const randomImageUrl = `https://danbooru.donmai.us/posts/${randomId}`;
   await ctx.send(format`${link('Пикча', randomImageUrl)}`);
@@ -41,7 +43,7 @@ const random = async (ctx: any) => {
  * @param ctx - Context object.
  * @param {string} site - Booru site identifier.
  */
-const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE) => {
+const searchCommand = async (ctx: CmdCtx, tags: string, site: string = DEFAULT_SITE) => {
   ctx.sendChatAction('upload_photo');
 
   try {
@@ -53,8 +55,8 @@ const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE
     }
     
     const photos = res.posts.map((e) => ({
-      type: 'photo',
-      media: e.sample_url || e.preview_url || e.file_url,
+      type: 'photo' as const,
+      media: e.sample_url || e.preview_url || e.file_url || '',
       has_spoiler: e.rating === 'e',
       caption: format`score: ${e.score} / id: ${link(e.id, e.booru.domain + e.booru.site.api.postView + e.id)}`
     }));
@@ -75,8 +77,8 @@ const searchCommand = async (ctx: any, tags: string, site: string = DEFAULT_SITE
  * Routes hentai command requests based on arguments.
  * @param ctx - Context object.
  */
-const hentaiRouter = async (ctx: any) => {
-  const payload: string = ctx.args;
+const hentaiRouter = async (ctx: CmdCtx) => {
+  const payload: string = ctx.args ?? '';
   if (payload) {
     const args = extractSite(payload);
 

@@ -1,5 +1,7 @@
-import { format, bold, join } from 'gramio'
+import { format, bold, join, type MessageContext } from 'gramio'
 import type { BotType } from '../..'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const COMMANDS = [
   { cmd: '/bipki [@user]', desc: 'Баланс (свой или @user)' },
@@ -20,7 +22,7 @@ const COMMANDS = [
 ]
 
 export default (bot: BotType) =>
-  bot.command("bipkihelp", async (ctx: any) => {
+  bot.command("bipkihelp", async (ctx: CmdCtx) => {
     const items = COMMANDS.map(
       ({ cmd, desc }) => format`${bold(cmd)} — ${desc}`,
     )

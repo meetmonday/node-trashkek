@@ -52,7 +52,7 @@ export class ArenaManager {
     const prevLeader = this.db.meta.get(lKey)
     const prevId = prevLeader ? parseInt(prevLeader, 10) : null
 
-    const leader = top[0].user_id
+    const leader = top[0]!.user_id
     if (prevId !== leader) {
       this.db.meta.set(lKey, String(leader))
       this.db.meta.set(LEADER_SINCE_KEY + chatId, String(Date.now()))
@@ -92,7 +92,7 @@ export class ArenaManager {
 
   private distributePrizesForWeek(chatId: number, week: string): { userId: number; amount: number }[] {
     const top = this.db.arena.top(chatId, week, 3)
-    if (top.length === 0 || top[0].score === 0) return []
+    if (top.length === 0 || top[0]!.score === 0) return []
 
     const vault = this.heist.vaultBalance
     const pool = Math.min(vault, PRIZE_LIMIT)
@@ -103,18 +103,19 @@ export class ArenaManager {
 
     this.db.transaction(() => {
       for (let i = 0; i < top.length; i++) {
-        const amount = Math.floor(pool * shares[i])
+        const row = top[i]!
+        const amount = Math.floor(pool * shares[i]!)
         if (amount <= 0) continue
         const taken = this.heist.takeFromVault(amount)
         if (taken <= 0) continue
-        this.db.balance.add(top[i].user_id, taken)
+        this.db.balance.add(row.user_id, taken)
         this.db.transactions.insert({
-          to_user_id: top[i].user_id,
+          to_user_id: row.user_id,
           amount: taken,
           type: TX_TYPE.transfer,
           description: `arena prize #${i + 1} (week ${week})`,
         })
-        prizes.push({ userId: top[i].user_id, amount: taken })
+        prizes.push({ userId: row.user_id, amount: taken })
       }
     })
 
@@ -132,7 +133,7 @@ export class ArenaManager {
     if (stored !== null) {
       for (const chatId of prevChats) {
         const raw = this.db.arena.top(chatId, stored, 3)
-        if (raw.length === 0 || raw[0].score === 0) continue
+        if (raw.length === 0 || raw[0]!.score === 0) continue
         const prizes = this.distributePrizesForWeek(chatId, stored)
         if (prizes.length > 0) {
           events.push({

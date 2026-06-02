@@ -1,11 +1,13 @@
-import { format, bold } from 'gramio'
+import { format, bold, type MessageContext, type CallbackQueryContext } from 'gramio'
 import { bipbank, TX_TYPE } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki, userName } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 import {
   sleep, gameKey, MAX_LOG, MIN_BET, MAX_BET,
   parseGameBet, gameKeyboard, renderGameHeader, renderGameLogLines,
-  newBet, deleteDiceMsg,
+  newBet, deleteDiceMsg, cleanupStaleGames, sendArenaEvent,
   type GameBase, type GameLogEntry,
 } from '@/helpers/games'
 
@@ -23,6 +25,9 @@ interface SlotsGame extends GameBase {
 
 const games = new Map<string, SlotsGame>()
 const KEYBOARD = gameKeyboard('sl', 'Крутить', '🎰')
+
+const CLEANUP_TTL = 30 * 60 * 1000
+setInterval(() => { cleanupStaleGames(games, CLEANUP_TTL) }, 5 * 60 * 1000)
 
 function sym(n: number) {
   return SYMBOLS[n]!
@@ -59,7 +64,7 @@ function renderGame(g: SlotsGame): string {
 }
 
 export default (bot: BotType) => {
-  bot.command("slots", async (ctx: any) => {
+  bot.command("slots", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId || !ctx.chat?.id) return
@@ -86,13 +91,14 @@ export default (bot: BotType) => {
         chatId: ctx.chat.id, messageId: msgId,
         creatorId: userId, creatorName: name,
         bet, closed: false, log: [],
+        createdAt: Date.now(),
       })
     } catch {
       await ctx.reply('Ошибка').catch(() => {})
     }
   })
 
-  bot.on('callback_query', async (ctx: any, next: any) => {
+  bot.on('callback_query', async (ctx: CallbackQueryContext<BotType>, next: any) => {
     const raw = ctx.update?.callback_query?.data || ctx.payload?.data
     if (typeof raw !== 'string' || !raw.startsWith('sl:')) return next()
 
@@ -182,12 +188,7 @@ export default (bot: BotType) => {
         game.log.splice(0, game.log.length - MAX_LOG)
       }
 
-      if (arenaEvent) {
-        const msg = arenaEvent.type === 'takeover'
-          ? format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} выходит в лидеры Арены — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
-          : format`🏟️ ${bold(userName(ctx.from, arenaEvent.top[0].userId))} удерживает лидерство 3 дня — ${bold(String(arenaEvent.top[0].score))} ${pluralizeBipki(arenaEvent.top[0].score)}!`
-        await ctx.reply(msg).catch(() => {})
-      }
+      sendArenaEvent(ctx, arenaEvent)
 
       await ctx.editText(renderGame(game), { reply_markup: KEYBOARD })
     } catch {

@@ -1,7 +1,9 @@
-import { format, bold } from 'gramio'
+import { format, bold, type MessageContext, type CallbackQueryContext } from 'gramio'
 import { bipbank } from '@/economy'
 import type { BotType } from '@/index'
 import { ensureBipkiUser, pluralizeBipki, safeReply } from '@/helpers/shared'
+
+type CmdCtx = MessageContext<BotType> & { args: string | null }
 
 const PREFIX = 'ch'
 
@@ -50,17 +52,14 @@ function renderCharity(
     lines.push(`📋 Последний сбор: +${collected.totalCollected} ${pluralizeBipki(collected.totalCollected)} с ${collected.payerCount} пользователей`)
   }
 
-  const inlineKeyboard: any[][] = [
-    [
-      { text: rate === 1 ? '✅ 1%' : '1%', callback_data: `${PREFIX}:rate:1` },
-      { text: rate === 2 ? '✅ 2%' : '2%', callback_data: `${PREFIX}:rate:2` },
-      { text: rate === 3 ? '✅ 3%' : '3%', callback_data: `${PREFIX}:rate:3` },
-    ],
-    [
-      { text: rate === 5 ? '✅ 5%' : '5%', callback_data: `${PREFIX}:rate:5` },
-      { text: rate === 10 ? '✅ 10%' : '10%', callback_data: `${PREFIX}:rate:10` },
-    ],
-  ]
+  const ALL_RATES = [1, 2, 3, 5, 10] as const
+  const available = ALL_RATES.filter(r => r >= required)
+  const inlineKeyboard: any[][] = available.length <= 3
+    ? [available.map(r => ({ text: rate === r ? `✅ ${r}%` : `${r}%`, callback_data: `${PREFIX}:rate:${r}` }))]
+    : [
+        available.slice(0, Math.ceil(available.length / 2)).map(r => ({ text: rate === r ? `✅ ${r}%` : `${r}%`, callback_data: `${PREFIX}:rate:${r}` })),
+        available.slice(Math.ceil(available.length / 2)).map(r => ({ text: rate === r ? `✅ ${r}%` : `${r}%`, callback_data: `${PREFIX}:rate:${r}` })),
+      ]
 
   if (user && user.balance < 100) {
     const check = bipbank.charity.canWithdraw(userId)
@@ -80,7 +79,7 @@ function renderCharity(
 }
 
 export default (bot: BotType) => {
-  bot.command("charity", async (ctx: any) => {
+  bot.command("charity", async (ctx: CmdCtx) => {
     try {
       const userId = ensureBipkiUser(ctx)
       if (!userId) return
@@ -91,7 +90,7 @@ export default (bot: BotType) => {
       const lastCollectDate = charity.getLastCollectionDate()
       const displayName = ctx.from?.username
         ? `@${ctx.from.username}`
-        : ctx.from?.first_name ?? `id${userId}`
+        : ctx.from?.firstName ?? `id${userId}`
 
       const { text, keyboard } = renderCharity(userId, bankBalance, rate, displayName, lastCollectDate)
       const sent = await ctx.reply(text, { reply_markup: keyboard })
@@ -101,7 +100,7 @@ export default (bot: BotType) => {
     }
   })
 
-  bot.on('callback_query', async (ctx: any, next: any) => {
+  bot.on('callback_query', async (ctx: CallbackQueryContext<BotType>, next: any) => {
     const raw = ctx.update?.callback_query?.data || ctx.payload?.data
     if (typeof raw !== 'string' || !raw.startsWith(PREFIX + ':')) return next()
 
@@ -128,7 +127,7 @@ export default (bot: BotType) => {
         const fraction = fractionStr as 'quarter' | 'half' | 'ninety'
         const taken = bipbank.charity.withdraw(userId, fraction)
         const pct = fraction === 'quarter' ? '25%' : fraction === 'half' ? '50%' : '90%'
-        const who = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name ?? `id${userId}`
+        const who = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.firstName ?? `id${userId}`
         await ctx.editText(
           format`🧑 ${who}\n✅ Ты получил ${bold(String(taken))} ${pluralizeBipki(taken)} (${pct} от банка)`,
         )
@@ -140,7 +139,7 @@ export default (bot: BotType) => {
       const lastCollectDate = bipbank.charity.getLastCollectionDate()
       const displayName = ctx.from?.username
         ? `@${ctx.from.username}`
-        : ctx.from?.first_name ?? `id${userId}`
+        : ctx.from?.firstName ?? `id${userId}`
       const { text, keyboard } = renderCharity(userId, bankBalance, rate, displayName, lastCollectDate)
       await ctx.editText(text, { reply_markup: keyboard })
     } catch {

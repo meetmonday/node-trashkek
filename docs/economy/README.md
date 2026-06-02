@@ -47,7 +47,7 @@ const bal = bipbank.balance(userId)
 import { ensureBipkiUser } from '@/helpers/shared'
 
 export default (bot: BotType) =>
-  bot.command("example", async (ctx: any) => {
+  bot.command("example", async (ctx: CmdCtx) => {
     const userId = ensureBipkiUser(ctx)
     if (!userId) return
     // userId гарантированно есть в БД, username сохранён

@@ -1,22 +1,22 @@
+import { type MessageContext } from 'gramio';
 import type { BotType } from '..';
 
-/**
- * Gets the current git commit hash.
- * @returns {string|null} Short commit hash or null if not available.
- */
-function getCurrentCommitHash(): string|null {
+type CmdCtx = MessageContext<BotType> & { args: string | null }
+
+interface GitHubCommit {
+  sha: string
+  commit: { message: string }
+}
+
+function getCurrentCommitHash(): string | null {
   return process.env.GIT_HASH?.slice(0, 7) || null;
 }
 
-/**
- * Fetches commit history from GitHub repository.
- * @returns {Promise<Array>} Array of commits or [] on error.
- */
-async function getCommitHistory(): Promise<Array<string>> {
+async function getCommitHistory(): Promise<GitHubCommit[]> {
   try {
-    const response = await fetch(`https://api.github.com/repos/meetmonday/node-trashkek/commits`);
-    const data = await response.json();
-    return data as Array<string>;
+    const response = await fetch('https://api.github.com/repos/meetmonday/node-trashkek/commits');
+    if (!response.ok) return [];
+    return await response.json() as GitHubCommit[];
   } catch (err) {
     if (err instanceof Error) {
       console.error(err.message);
@@ -25,22 +25,14 @@ async function getCommitHistory(): Promise<Array<string>> {
   }
 }
 
-/**
- * Generates a changelog from recent commits.
- * @param {number} numEntries - Number of entries to include.
- * @returns {Promise<Array<string>>} Array of changelog entries or null.
- */
-async function generateChangelog(numEntries: number): Promise<Array<string>> {
+async function generateChangelog(numEntries: number): Promise<string[]> {
   const commitHistory = await getCommitHistory();
-  if (!commitHistory) {
-    console.error('Failed to retrieve commit history. Changelog generation aborted.');
-    return ['Failed to retrieve commit history.'];
-  }
+  if (commitHistory.length === 0) return ['Failed to retrieve commit history.'];
 
   const currentCommitHash = getCurrentCommitHash();
   const recentCommits = commitHistory.slice(0, numEntries);
 
-  return recentCommits.map((commit: any, index: number) => {
+  return recentCommits.map((commit: GitHubCommit, index: number) => {
     const shortSha = commit.sha.slice(0, 7);
     const marker = shortSha === currentCommitHash ? ' ◀' : '';
     return `${index + 1}. ${shortSha}${marker}: ${commit.commit.message}`;
@@ -51,18 +43,12 @@ async function generateChangelog(numEntries: number): Promise<Array<string>> {
  * Handler for version command.
  * @param {Object} ctx - Telegraf context object.
  */
-const getVersion = async (ctx: any): Promise<void> => {
-  const numEntries = Math.min(Math.max(parseInt(ctx.args, 10) || 7, 1), 20);
+const getVersion = async (ctx: CmdCtx): Promise<void> => {
+  const numEntries = Math.min(Math.max(parseInt(ctx.args ?? '', 10) || 7, 1), 20);
 
   try {
     const changelog = await generateChangelog(numEntries);
-
-    const messages = ['ЧЛЕНДЖЛОГ:'];
-    if (changelog) {
-      messages.push(...changelog);
-    }
-
-    await ctx.send(messages.join('\n'));
+    await ctx.send(['ЧЛЕНДЖЛОГ:', ...changelog].join('\n'));
   } catch (error) {
     console.error('Version command error:', error);
     await ctx.send('Failed to retrieve version information');
