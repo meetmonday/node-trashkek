@@ -1,4 +1,4 @@
-import { MediaUpload, MediaInput, type MessageContext } from 'gramio';
+import { MediaUpload, MediaInput, type MessageContext, type Next } from 'gramio';
 import type { BotType } from '..';
 
 const TARGET_USERNAME = 'generated_anime_women';
@@ -37,13 +37,13 @@ export default (bot: BotType) => {
     }
   }
 
-  bot.on('message', async (ctx: MessageContext<BotType>) => {
+  bot.on('message', async (ctx: MessageContext<BotType>, next: Next) => {
     try {
       const origin = ctx.forwardOrigin;
-      if (origin?.type !== 'channel' || origin.chat.username !== TARGET_USERNAME) return;
+      if (origin?.type !== 'channel' || origin.chat.username !== TARGET_USERNAME) return next();
 
       const doc = ctx.document;
-      if (!doc?.mimeType?.startsWith('image/')) return;
+      if (!doc?.mimeType?.startsWith('image/')) return next();
 
       if (ctx.mediaGroupId) {
         const key = ctx.mediaGroupId;
@@ -74,6 +74,7 @@ export default (bot: BotType) => {
       });
     } catch (err) {
       console.error('anime_women error:', err);
+      next();
     }
   });
 };
