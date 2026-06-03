@@ -939,6 +939,32 @@ describe("Bipki Commands", () => {
       expect(textOf(env.apiCalls[0])).toContain("+/-")
     })
   })
+
+  // ── rollback ─────────────────────────────────────────────────────
+  describe("rollbackTo", () => {
+    it("reverts transactions after given timestamp", () => {
+      const pastTs = Math.floor(Date.now() / 1000) - 1
+
+      bipbank.deposit(900, 100, TX_TYPE.admin, "a")
+      bipbank.deposit(900, 50, TX_TYPE.work, "b")
+      bipbank.withdraw(900, 30, TX_TYPE.burn, "c")
+
+      expect(bipbank.balance(900)).toBe(120)
+
+      const result = bipbank.rollbackTo(pastTs)
+
+      expect(result.revertedTxCount).toBe(3)
+      expect(result.replayedTxCount).toBe(0)
+      expect(bipbank.balance(900)).toBe(0)
+    })
+
+    it("handles empty rollback (no transactions)", () => {
+      const ts = Math.floor(Date.now() / 1000) + 1
+      const result = bipbank.rollbackTo(ts)
+      expect(result.revertedTxCount).toBe(0)
+      expect(result.replayedTxCount).toBe(0)
+    })
+  })
 })
 
 // ── /charity ──────────────────────────────────────────────────────

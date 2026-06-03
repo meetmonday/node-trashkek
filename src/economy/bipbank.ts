@@ -86,7 +86,7 @@ export class BipBank {
     if (amount <= 0) throw new Error('Amount must be positive')
     this.ensureUser(to)
 
-    const personalCoeff = this.charity.getPersonalCoeff(to)
+    const personalCoeff = type === TX_TYPE.gambled ? 1.0 : this.charity.getPersonalCoeff(to)
     const effectiveAmount = Math.round(amount * personalCoeff)
 
     if (effectiveAmount <= 0) return 0
@@ -203,6 +203,38 @@ export class BipBank {
       this.db.burned.add(userId, amount)
       this.db.transactions.insert({ from_user_id: userId, amount, type: TX_TYPE.burn })
     })
+  }
+
+  rollbackTo(timestamp: number): { replayedTxCount: number; revertedTxCount: number } {
+    this.dbManager.backupDb()
+
+    return this.db.transaction(() => {
+      this.db.balance.resetAll()
+
+      const txs = this.db.transactions.upTo(timestamp)
+      for (const tx of txs) {
+        if (tx.to_user_id !== null) {
+          this.db.users.ensure(tx.to_user_id)
+          this.db.balance.add(tx.to_user_id, tx.amount)
+        }
+        if (tx.from_user_id !== null) {
+          this.db.users.ensure(tx.from_user_id)
+          this.db.balance.sub(tx.from_user_id, tx.amount)
+        }
+        if ((tx.type === TX_TYPE.burn || tx.type === TX_TYPE.fee) && tx.from_user_id !== null) {
+          this.db.burned.add(tx.from_user_id, tx.amount)
+        }
+      }
+
+      const revertedTxCount = this.db.transactions.markRevertedAfter(timestamp)
+
+      return { replayedTxCount: txs.length, revertedTxCount }
+    })
+  }
+
+  /** Count transactions up to a given timestamp (read-only). */
+  transactionCountUpTo(timestamp: number): number {
+    return this.db.transactions.upTo(timestamp).length
   }
 
   getUser(userId: number): UserRow {

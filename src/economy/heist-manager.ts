@@ -120,18 +120,8 @@ export class HeistManager {
     this.db.meta.set(COOLDOWN_PREFIX + userId, expiresAt)
   }
 
-  maxUserBalance(excludeUserId?: number): number {
-    const sql = excludeUserId
-      ? 'SELECT MAX(balance) as m FROM users WHERE user_id != ?'
-      : 'SELECT MAX(balance) as m FROM users'
-    const row = (excludeUserId
-      ? this.db.raw.query(sql).get(excludeUserId)
-      : this.db.raw.query(sql).get()) as { m: number | null } | undefined
-    return row?.m ?? 0
-  }
-
-  payoutCeiling(excludeUserId?: number): number {
-    return Math.max(this.maxUserBalance(excludeUserId), 2000)
+  payoutCeiling(userBalance: number): number {
+    return Math.max(userBalance * 2, 2000)
   }
 
   calculateReward(vaultAmount: number, stagesPassed: number): number {

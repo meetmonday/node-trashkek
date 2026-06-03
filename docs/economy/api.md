@@ -43,6 +43,7 @@ TX_TYPE.work      // 5
 TX_TYPE.admin     // 6
 TX_TYPE.fee       // 7
 TX_TYPE.gambled   // 8
+TX_TYPE.charity   // 9
 
 txTypeName(7)     // 'fee'
 ```
@@ -292,6 +293,36 @@ bipbank.admin.getTransactions(limit?: number): TransactionRow[]
 bipbank.ensureChatUser(chatId: number, userId: number): void
 bipbank.getChatUserIds(chatId: number): number[]
 ```
+
+## Откат экономики (rollback)
+
+```ts
+bipbank.rollbackTo(timestamp: number): { replayedTxCount: number; revertedTxCount: number }
+bipbank.transactionCountUpTo(timestamp: number): number
+```
+
+Пересчитывает все балансы с нуля по транзакциям до `timestamp` (Unix seconds).
+Транзакции после `timestamp` помечаются колонкой `reverted_at`.
+
+Алгоритм:
+1. Автоматический `VACUUM INTO` backup в `data/backups/`
+2. `UPDATE users SET balance = 0, total_burned = 0`
+3. Перебор всех транзакций с `created_at <= timestamp` по порядку `id`:
+   - `to_user_id != null` → `balance += amount`
+   - `from_user_id != null` → `balance -= amount`
+   - `type IN (burn, fee)` → `total_burned += amount`
+4. `UPDATE transactions SET reverted_at = unixepoch() WHERE created_at > timestamp`
+
+```ts
+const result = bipbank.rollbackTo(1717430400)
+// result.replayedTxCount  — сколько транзакций переиграно
+// result.revertedTxCount  — сколько отменено
+```
+
+**Предупреждение:** `game_pools`, `arena_scores`, `meta` не очищаются автоматически.
+При откате до момента до пулов/арены может потребоваться ручная очистка.
+
+Админ-команда: `/bbadmin rollback {timestamp}` с поддержкой `1h`, `30m`, `7d`, ISO-дат.
 
 ## Очистка (только :memory:)
 

@@ -29,11 +29,12 @@ transactions (
   from_user_id   INTEGER,             -- NULL для начислений
   to_user_id     INTEGER,             -- NULL для списаний
   amount         INTEGER NOT NULL,
-  type           INTEGER NOT NULL,    -- 1..8 (TxType)
+  type           INTEGER NOT NULL,    -- 1..9 (TxType)
   description    TEXT,                -- inline для user-описаний
   description_id INTEGER REFERENCES descriptions(id),  -- для system-описаний
   parent_tx_id   INTEGER REFERENCES transactions(id),  -- комиссия → родитель
-  created_at     INTEGER DEFAULT (unixepoch())
+  created_at     INTEGER DEFAULT (unixepoch()),
+  reverted_at    INTEGER              -- unixepoch, заполняется при rollback
 )
 
 chat_users (
@@ -69,7 +70,7 @@ meta (
 ```typescript
 export const TX_TYPE = {
   daily: 1, transfer: 2, burn: 3, rain: 4,
-  work: 5, admin: 6, fee: 7, gambled: 8,
+  work: 5, admin: 6, fee: 7, gambled: 8, charity: 9,
 } as const
 ```
 
@@ -119,6 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_users_balance ON users(balance);
 - `upsertPoolContribution`, `getPoolParticipants`, `getPoolTotalRaw`, `deletePool`, `getAllPools`
 - `getArenaTop`, `upsertArenaScore`, `deleteArenaWeek`, `getArenaChats`, `getArenaScoreByChat`
 - `initTables`, `migrateSchema`, `clearAll`
+- `getAllUserIds`, `resetAllBalances`, `getTransactionsUpTo`, `markRevertedAfter`
 
 ### Неймспейс-обёртка `createDbApi(db)`
 
@@ -129,18 +131,22 @@ db.balance.of(userId)          // SELECT balance
 db.balance.add(userId, 100)    // UPDATE balance + N
 db.balance.sub(userId, 50)     // UPDATE balance - N
 db.balance.set(userId, 200)    // UPDATE balance = N
+db.balance.resetAll()          // UPDATE users SET balance=0, total_burned=0
 
 db.users.ensure(userId)
 db.users.get(userId)
 db.users.update(userId, { streak: 5 })
 db.users.setUsername(userId, 'name')
 db.users.findByUsername('@name')
+db.users.allIds()                       // все user_id в системе
 
 db.transactions.insert({ from_user_id, to_user_id, amount, type, description })
   // → number (id новой транзакции)
   // Поддерживает systemDescription, parentTxId
 db.transactions.history(userId, limit)
 db.transactions.admin(limit)
+db.transactions.upTo(timestamp)           // → TransactionRow[] (created_at <= ts, по id ASC)
+db.transactions.markRevertedAfter(ts)     // → number (сколько транзакций помечено)
 
 db.stats.totalBurned()
 db.stats.economyStats()
@@ -164,7 +170,7 @@ db.meta.get(key)                // → string | undefined
 db.meta.set(key, value)         // UPSERT
 
 // Ключи meta:
-//   schema_version — число (текущая: 5), управляется migrateSchema
+//   schema_version — число (текущая: 6), управляется migrateSchema
 //   heist_lock     — JSON { userId, startedAt } или пустая строка
 //   vault          — строка (число), баланс банковского сейфа
 //   withdraw_cooldown:{userId} — дата последнего изъятия из банка
@@ -192,11 +198,12 @@ db.transaction(() => { ... })       // SQLite transaction
 
 ## Схема и миграции
 
-Версионирование через `meta` таблицу (ключ `schema_version`). Текущая версия: 5.
+Версионирование через `meta` таблицу (ключ `schema_version`). Текущая версия: 6.
 
 - `migrateSchema()` вызывается при старте BipBank, проходит все версии последовательно.
 - `tryAlter()` — идемпотентное добавление колонок, игнорирует `duplicate column name`.
-- Начальный `CREATE TABLE` уже включает все поля (`username`, `description_id`, `parent_tx_id`).
+- Начальный `CREATE TABLE` уже включает все поля (`username`, `description_id`, `parent_tx_id`, `reverted_at`).
+- Миграция v6: `ALTER TABLE transactions ADD COLUMN reverted_at INTEGER`.
 
 ## Миграция из старого формата
 

@@ -17,8 +17,10 @@
 | `/economy` | Статистика экономики + коэффициент стабилизатора |
 | `/history [N]` | Последние N операций (default 5, max 20, время относительное) |
 | `/bipkiHelp` | Справка по всем командам |
-| `/bbadmin @user +/-N [причина]` | Админ-команда (требуется ADMIN_IDS) |
+| `/bbadmin @user +/-N [причина]` | Админ-команда: начисление/списание |
+| `/bbadmin rollback {timestamp}` | Админ-команда: откат экономики до момента. `1h`, `30m`, `7d`, ISO-дата, Unix seconds |
 | `/crack [N]` | Взлом сейфа (ограбление банка) с опциональным залогом |
+| `/charity` | Благотворительность — налог на богатство с бустом дохода |
 | `/arena` | Еженедельная арена — топ net-выигрышей в игры. Призы топ-3 из vault |
 
 ---
@@ -167,7 +169,7 @@ House edge: 0%
   stagesPassed = пройдено этапов (1–3)
   base = vault × (stagesPassed / 3)
   limit = 500 + floor(vault × 0.2)
-  ceiling = max(MAX(balance FROM users WHERE user_id != грабитель), 2000)
+  ceiling = max(balance_грабителя × 2, 2000)
   reward = min(floor(base), limit, ceiling)
 
 В банк (vault) попадают:

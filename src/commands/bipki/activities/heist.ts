@@ -392,7 +392,8 @@ export default (bot: BotType) => {
 
         const stagesPassed = session.stages.length + 1
         const vault = heist.vaultBalance
-        const fullReward = Math.min(heist.calculateReward(vault, stagesPassed), heist.payoutCeiling(userId))
+        const userBalance = bipbank.balance(userId)
+        const fullReward = Math.min(heist.calculateReward(vault, stagesPassed), heist.payoutCeiling(userBalance))
         const reward = won ? fullReward : Math.floor(fullReward * 0.75)
         const paid = heist.takeFromVault(reward)
         const vaultBurned = heist.burnVaultReserve()

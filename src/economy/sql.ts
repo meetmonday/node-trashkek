@@ -384,7 +384,7 @@ export function getArenaScoreByChat(db: Database, chatId: number, week: string):
   return row?.score ?? 0
 }
 
-const SCHEMA_VERSION = 5
+const SCHEMA_VERSION = 6
 
 function tryAlter(db: Database, sql: string): void {
   try {
@@ -403,6 +403,7 @@ export function migrateSchema(db: Database): void {
   if (currentVersion < 2) tryAlter(db, 'ALTER TABLE users ADD COLUMN charity_rate INTEGER NOT NULL DEFAULT 1')
   if (currentVersion < 3) tryAlter(db, 'ALTER TABLE transactions ADD COLUMN description_id INTEGER REFERENCES descriptions(id)')
   if (currentVersion < 4) tryAlter(db, 'ALTER TABLE transactions ADD COLUMN parent_tx_id INTEGER REFERENCES transactions(id)')
+  if (currentVersion < 6) tryAlter(db, 'ALTER TABLE transactions ADD COLUMN reverted_at INTEGER')
 
   setMeta(db, 'schema_version', String(SCHEMA_VERSION))
 }
@@ -416,6 +417,32 @@ export function clearAll(db: Database): void {
   db.run('DELETE FROM users')
   db.run('DELETE FROM meta')
   db.run('DELETE FROM arena_scores')
+}
+
+// ── Rollback helpers ──
+
+export function getAllUserIds(db: Database): number[] {
+  const rows = db.query('SELECT user_id FROM users').all() as { user_id: number }[]
+  return rows.map(r => r.user_id)
+}
+
+export function resetAllBalances(db: Database): void {
+  db.run('UPDATE users SET balance = 0, total_burned = 0')
+}
+
+export function getTransactionsUpTo(db: Database, timestamp: number): TransactionRow[] {
+  return db.query(
+    'SELECT * FROM transactions WHERE created_at <= ? ORDER BY id ASC',
+  ).all(timestamp) as TransactionRow[]
+}
+
+export function markRevertedAfter(db: Database, timestamp: number): number {
+  db.run(
+    'UPDATE transactions SET reverted_at = unixepoch() WHERE created_at > ? AND reverted_at IS NULL',
+    [timestamp],
+  )
+  const result = db.query('SELECT changes() as cnt').get() as { cnt: number }
+  return result.cnt
 }
 
 // ── Namespaced API ──
@@ -441,6 +468,9 @@ export function createDbApi(db: Database) {
       set(userId: number, amount: number): void {
         setBalance(db, userId, amount)
       },
+      resetAll(): void {
+        resetAllBalances(db)
+      },
     },
 
     users: {
@@ -462,6 +492,9 @@ export function createDbApi(db: Database) {
       findByUsername(username: string): number | null {
         return findUserIdByUsername(db, username.toLowerCase().replace('@', ''))
       },
+      allIds(): number[] {
+        return getAllUserIds(db)
+      },
     },
 
     burned: {
@@ -479,6 +512,12 @@ export function createDbApi(db: Database) {
       },
       admin(limit = 10): TransactionRow[] {
         return getAdminTxs(db, limit)
+      },
+      upTo(timestamp: number): TransactionRow[] {
+        return getTransactionsUpTo(db, timestamp)
+      },
+      markRevertedAfter(timestamp: number): number {
+        return markRevertedAfter(db, timestamp)
       },
     },
 

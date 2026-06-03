@@ -16,7 +16,10 @@ src/
     ├── admin-manager.ts      ← AdminManager (setBalance, getTransactions)
     ├── stats-queries.ts      ← StatsQueries (economyStats, totalBurned, top, history)
     ├── database-manager.ts   ← DatabaseManager (backupDb)
-    └── sql.ts                ← DbApi: все SQL-запросы
+    ├── heist-manager.ts      ← HeistManager (bank vault, cracking)
+    ├── charity-manager.ts    ← CharityManager (tax, income boost, withdraw)
+    ├── arena-manager.ts      ← ArenaManager (weekly competition, prizes)
+    └── sql.ts                ← DbApi: все SQL-запросы, rollback
 ```
 
 ## Быстрый старт
