@@ -43,7 +43,8 @@ async function generateChangelog(numEntries: number): Promise<Array<string>> {
   return recentCommits.map((commit: any, index: number) => {
     const shortSha = commit.sha.slice(0, 7);
     const marker = shortSha === currentCommitHash ? ' ◀' : '';
-    return `${index + 1}. ${shortSha}${marker}: ${commit.commit.message}`;
+    const message = commit.commit.message.split('\n')[0];
+    return `${index + 1}. ${shortSha}${marker}: ${message}`;
   });
 }
 
