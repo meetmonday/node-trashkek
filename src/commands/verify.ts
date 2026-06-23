@@ -46,6 +46,10 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
+function bytesToUint32BE(buf: Uint8Array, offset: number): number {
+  return (buf[offset]! << 24) | (buf[offset + 1]! << 16) | (buf[offset + 2]! << 8) | buf[offset + 3]!;
+}
+
 function bytesToUint64BE(buf: Uint8Array, offset: number): bigint {
   let result = 0n;
   for (let i = 0; i < 8; i++) {
@@ -108,11 +112,11 @@ async function main(ctx: any): Promise<void> {
   }
 
   const hash = await computeHash(randomnessHex, parsed.gameId);
-  const bulletValue = Number(bytesToUint64BE(hash, 0) % 100n);
+  const bulletValue = bytesToUint32BE(hash, 0) % 100;
   const isAtomic = bulletValue < 3;
   const bulletLabel = isAtomic ? "атомная 💀" : "свинцовая 🔫";
   const victimIndex = Number(
-    bytesToUint64BE(hash, 8) % BigInt(parsed.playerCount),
+    bytesToUint64BE(hash, 4) % BigInt(parsed.playerCount),
   );
   const victimLabel = isAtomic ? "все" : `#${victimIndex + 1}`;
 
