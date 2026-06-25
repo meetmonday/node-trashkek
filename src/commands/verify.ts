@@ -47,7 +47,7 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 function bytesToUint32BE(buf: Uint8Array, offset: number): number {
-  return (buf[offset]! << 24) | (buf[offset + 1]! << 16) | (buf[offset + 2]! << 8) | buf[offset + 3]!;
+  return ((buf[offset]! << 24) | (buf[offset + 1]! << 16) | (buf[offset + 2]! << 8) | buf[offset + 3]!) >>> 0;
 }
 
 function bytesToUint64BE(buf: Uint8Array, offset: number): bigint {
