@@ -73,7 +73,7 @@ async function main(
   }
 
   try {
-    ctx.sendChatAction("upload_photo");
+    await ctx.sendChatAction("upload_photo");
 
     const buffer = await bot.downloadFile(doc);
     const params = reply.caption ? { caption: reply.caption } : undefined;
