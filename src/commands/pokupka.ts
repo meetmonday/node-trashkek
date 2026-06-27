@@ -76,11 +76,11 @@ async function handleSingle(
   ctx: MessageContext<BotType>,
   bot: BotType,
   reply: NonNullable<MessageContext<BotType>["replyMessage"]>,
-  doc: DocumentLike & { file_id: string },
+  doc: DocumentLike & { fileId?: string; file_id?: string },
 ): Promise<void> {
   await ctx.sendChatAction("upload_photo");
 
-  const buffer = await bot.downloadFile({ file_id: doc.file_id });
+  const buffer = await bot.downloadFile(doc);
   const params = reply.caption ? { caption: reply.caption } : undefined;
 
   await ctx.sendPhoto(
@@ -98,7 +98,7 @@ async function handleAlbum(
   await ctx.sendChatAction("upload_photo");
 
   const buffers = await Promise.all(
-    docs.map((d) => bot.downloadFile({ file_id: d.fileId })),
+    docs.map((d) => bot.downloadFile(d.fileId)),
   );
 
   const media = buffers.map((buffer, i) =>
@@ -160,7 +160,7 @@ export default (bot: BotType) => {
         mediaGroupCache.set(groupId, entry);
       }
       entry.items.push({
-        fileId: ctx.document.file_id,
+        fileId: ctx.document.fileId,
         fileName: getFileName(ctx.document),
         caption: ctx.caption,
       });
