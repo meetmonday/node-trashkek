@@ -6,8 +6,18 @@ import timeAgo from "@/helpers/timeAgo";
 
 import type { BotType } from "..";
 import type { Comment, CommentsResponse } from "@/types/trashkek";
+import type { MusorboxComment, MusorboxCommentsResponse } from "@/types/musorbox";
 
-const ACCEPTED_DOMAINS = ['trashbox.ru', 'redspecial.ru'];
+const TRASHBOX_DOMAINS = ['trashbox.ru', 'redspecial.ru'];
+const MUSORBOX_DOMAINS = ['kek.mtmnd.ru'];
+const ACCEPTED_DOMAINS = [...TRASHBOX_DOMAINS, ...MUSORBOX_DOMAINS];
+
+type CommentLike = {
+  login: string;
+  posted: number | string;
+  content: string;
+  votes: number;
+};
 
 async function parseUrl(url: string): Promise<{ topicId: number; commentId: number; host: string; }> {
   const u: URL = new URL(url);
@@ -24,7 +34,7 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
   if (pathParts[0] === 'topics') {
     topicId = parseInt(pathParts[1]!, 10);
   }
-  else if (pathParts[0] === 'link') {
+  else if (pathParts[0] === 'link' && TRASHBOX_DOMAINS.includes(host)) {
     if (!/^[a-zA-Z0-9_-]+$/.test(pathParts[1]!)) {
       throw new Error("Некорректная ссылка");
     }
@@ -45,6 +55,33 @@ async function parseUrl(url: string): Promise<{ topicId: number; commentId: numb
   }
 }
 
+async function fetchComment(host: string, topicId: number, commentId: number): Promise<CommentLike | null> {
+  if (MUSORBOX_DOMAINS.includes(host)) {
+    const res = await fetch(`https://${host}/api/topics/${topicId}/comments`);
+    if (!res.ok) throw new Error('Апи каментов: ошибка');
+    const data = await res.json() as MusorboxCommentsResponse;
+    const found: MusorboxComment | undefined = data.items.find((c: MusorboxComment) => c.id === commentId);
+    if (!found) return null;
+    return {
+      login: found.authorUsername,
+      posted: new Date(found.createdAt).getTime() / 1000,
+      content: found.body,
+      votes: found.votesUp - found.votesDown,
+    };
+  }
+
+  const res = await fetch(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
+  if (!res.ok) throw new Error('Апи каментов: ошибка');
+  const data = await res.json() as CommentsResponse;
+  const found: Comment | undefined = data.comments.find((c: Comment) => parseInt(c.comm_id, 10) === commentId);
+  if (!found) return null;
+  return {
+    login: found.login,
+    posted: found.posted,
+    content: found.content,
+    votes: parseInt(found.votes, 10),
+  };
+}
 
 async function main(ctx: any): Promise<void> {
   const url = ctx.text;
@@ -64,25 +101,33 @@ async function main(ctx: any): Promise<void> {
     return;
   }
 
+  let comment: CommentLike | null;
+  try {
+    comment = await fetchComment(host, topicId, commentId);
+  }
+  catch (err) {
+    if (err instanceof Error) {
+      ctx.reply(err.message);
+    }
+    return;
+  }
 
-  const res = await fetch(`https://${host}/api_noauth.php?action=comments&topic_id=${topicId}`);
-  if (!res.ok) throw new Error('Апи каментов: ошибка');
-  const data = await res.json() as CommentsResponse;
-  const comment = data.comments.find((c: Comment) => parseInt(c.comm_id, 10) === commentId);
   if (!comment) {
     ctx.reply("Комментарий не найден");
     return;
   }
 
+  const baseUrl = `https://${host}`;
+
   ctx.send(format`
-    ${string2emoji(comment.login)} ${bold(comment.login)}, ${timeAgo(comment.posted, true)} назад ${parseInt(comment.votes, 10) !== 0 ? `(${comment.votes})` : ''}
-    ${markdownToFormattable(htmlCleaner(comment.content))}
+    ${string2emoji(comment.login)} ${bold(comment.login)}, ${timeAgo(comment.posted, true)} назад ${comment.votes !== 0 ? `(${comment.votes})` : ''}
+    ${markdownToFormattable(htmlCleaner(comment.content, baseUrl))}
 
     ${link("Ссылка на комментарий", url)}`,
 
     {
       link_preview_options: {
-        is_disabled: firstImgSrc(comment.content) === null
+        is_disabled: firstImgSrc(comment.content, baseUrl) === null
       }
     }
   );

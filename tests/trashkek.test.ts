@@ -65,4 +65,28 @@ describe("Trashkek Command", () => {
     expect(env.apiCalls[0].method).toBe("sendMessage");
     expect(env.apiCalls[0].response.text).toBe("Некорректная ссылка");
   });
+
+  it("parse valid musorbox link", async () => {
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+
+    const env = new TelegramTestEnvironment(bot);
+    const user = env.createUser({ first_name: "Yehor" });
+
+    await user.sendMessage("https://kek.mtmnd.ru/topics/4/test#div_comment_11");
+
+    expect(env.apiCalls[0].method).toBe("sendMessage");
+    expect(env.apiCalls[1].method).toBe("deleteMessage");
+  });
+
+  it("send error for missing musorbox comment", async () => {
+    const bot = new Bot("test").extend(await autoload({ path: "../src/commands" }));
+
+    const env = new TelegramTestEnvironment(bot);
+    const user = env.createUser({ first_name: "Yehor" });
+
+    await user.sendMessage("https://kek.mtmnd.ru/topics/4/test#div_comment_999999");
+
+    expect(env.apiCalls[0].method).toBe("sendMessage");
+    expect(env.apiCalls[0].response.text).toBe("Комментарий не найден");
+  });
 });
