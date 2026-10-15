@@ -72,7 +72,7 @@ describe("Trashkek Command", () => {
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
 
-    await user.sendMessage("https://kek.mtmnd.ru/topics/4/test#div_comment_11");
+    await user.sendMessage("https://nasralbox.randomshit.icu/topics/17/razrabotchik-nexoreach-anonsiroval-podderzhku-faylov-do-4-gb-i-novye-vozmozhnosti-v-2027-godu#div_comment_16");
 
     expect(env.apiCalls[0].method).toBe("sendMessage");
     expect(env.apiCalls[1].method).toBe("deleteMessage");
@@ -84,7 +84,7 @@ describe("Trashkek Command", () => {
     const env = new TelegramTestEnvironment(bot);
     const user = env.createUser({ first_name: "Yehor" });
 
-    await user.sendMessage("https://kek.mtmnd.ru/topics/4/test#div_comment_999999");
+    await user.sendMessage("https://nasralbox.randomshit.icu/topics/17/razrabotchik-nexoreach-anonsiroval-podderzhku-faylov-do-4-gb-i-novye-vozmozhnosti-v-2027-godu#div_comment_999999");
 
     expect(env.apiCalls[0].method).toBe("sendMessage");
     expect(env.apiCalls[0].response.text).toBe("Комментарий не найден");

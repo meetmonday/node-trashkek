@@ -4,6 +4,20 @@ export interface MusorboxCommentsResponse {
   items: MusorboxComment[];
 }
 
+// 📦 Ответ сервера с топиком (GET /api/topics/:id)
+export interface MusorboxTopicResponse {
+  ok: boolean;
+  topic: MusorboxTopic;
+}
+
+// 📰 Тип топика
+export interface MusorboxTopic {
+  id: number;             // ID топика
+  title: string;          // Заголовок топика
+  slug: string;           // slug топика
+  body: string;           // HTML-контент топика
+}
+
 // 💬 Тип комментария
 export interface MusorboxComment {
   id: number;             // ID комментария
